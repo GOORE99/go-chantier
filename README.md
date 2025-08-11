@@ -12,6 +12,7 @@ flask run
 flask --app app/main.py run --debug
 
 
+
 ## git
 git init
 git status
@@ -22,3 +23,7 @@ git remote add origin https://github.com/GOORE99/go-chantier.git
 git branch
 git push -u origin master
 
+
+git add .
+git commit -m "premiere version avec frontend - calcul en cours"
+git push -u origin master

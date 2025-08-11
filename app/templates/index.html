@@ -8,24 +8,153 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#0f172a; --card:#111827; --muted:#94a3b8; --accent:#22c55e; }
+    :root { --bg:#0f172a; --card:#111827; --muted:#94a3b8; --accent:#22c55e; --border:#1f2937 }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb;min-height:100vh;display:grid;place-items:center;padding:24px}
-    .card{width:100%;max-width:720px;background:rgba(17,24,39,.6);backdrop-filter: blur(12px);border:1px solid rgba(148,163,184,.12);border-radius:16px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-    h1{margin:0 0 8px;font-size:28px;letter-spacing:.2px}
-    p{margin:0 0 18px;color:var(--muted)}
-    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
-    a.button{appearance:none;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid rgba(148,163,184,.18);background:#0b1220;color:#e5e7eb;text-decoration:none;font-weight:600;transition:.2s}
-    a.button:hover{transform:translateY(-1px);border-color:rgba(148,163,184,.35)}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb;min-height:100vh;display:grid;grid-template-rows:auto 1fr;}
+    header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(17,24,39,.7);backdrop-filter: blur(10px);border-bottom:1px solid rgba(148,163,184,.12)}
+    .title{display:flex;align-items:center;gap:10px}
+    .title h1{margin:0;font-size:20px}
+    .button{appearance:none;display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.18);background:#0b1220;color:#e5e7eb;text-decoration:none;font-weight:600;cursor:pointer}
+    .button:hover{border-color:rgba(148,163,184,.35)}
+    .container{padding:22px;max-width:1100px;width:100%;margin:0 auto}
+    .card{background:rgba(17,24,39,.6);border:1px solid rgba(148,163,184,.12);border-radius:16px;padding:18px;}
+    .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+    .search{display:flex;gap:10px}
+    input[type=text], input[type=date]{flex:1;background:#0b1220;border:1px solid rgba(148,163,184,.18);color:#e5e7eb;border-radius:10px;padding:10px}
+    .projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:16px}
+    .project{background:#0b1220;border:1px solid rgba(148,163,184,.18);border-radius:12px;padding:12px;display:grid;gap:8px}
+    .project img{width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid rgba(148,163,184,.12)}
+    .badge{font-size:11px;color:#a3e635;background:#1a2e22;border:1px solid #1f7a41;padding:2px 8px;border-radius:999px}
+    /* modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal.open{display:flex}
+    .modal .panel{width:100%;max-width:520px;background:#0b1220;border:1px solid rgba(148,163,184,.2);border-radius:14px;padding:18px}
+    .row{display:grid;gap:8px;margin-top:10px}
+    label{font-size:12px;color:var(--muted)}
   </style>
   </head>
 <body>
-  <div class="card">
-    <h1>GO-CHANTIER</h1>
-    <p>Bienvenue. Accédez aux modules de suivi et calcul.</p>
-    <div class="actions">
-      <a class="button" href="/suivi">Ouvrir le module de suivi</a>
+  <header>
+    <div class="title"><h1>GO-CHANTIER</h1><span class="muted">Gestion des projets</span></div>
+    <button id="newProjectBtn" class="button">Nouveau projet</button>
+  </header>
+  <div class="container">
+    <div class="card">
+      <div class="search">
+        <input id="searchInput" type="text" placeholder="Rechercher un projet..." />
+      </div>
+      <div id="projects" class="projects"></div>
     </div>
   </div>
+
+  <div id="newProjectModal" class="modal">
+    <div class="panel">
+      <h3 style="margin:0 0 8px">Créer un nouveau projet</h3>
+      <div class="row">
+        <label>Nom du projet</label>
+        <input id="pName" type="text" placeholder="Ex: Voie Express Abidjan" />
+      </div>
+      <div class="grid">
+        <div class="row">
+          <label>Date de début</label>
+          <input id="pStart" type="date" />
+        </div>
+        <div class="row">
+          <label>Date de fin</label>
+          <input id="pEnd" type="date" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button id="cancelModal" class="button">Annuler</button>
+        <button id="createProject" class="button" style="background:var(--accent);border-color:#178847">Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('newProjectModal');
+    const openBtn = document.getElementById('newProjectBtn');
+    const cancelBtn = document.getElementById('cancelModal');
+    const createBtn = document.getElementById('createProject');
+    const pName = document.getElementById('pName');
+    const pStart = document.getElementById('pStart');
+    const pEnd = document.getElementById('pEnd');
+    const projectsGrid = document.getElementById('projects');
+    const searchInput = document.getElementById('searchInput');
+
+    function openModal(){ modal.classList.add('open'); }
+    function closeModal(){ modal.classList.remove('open'); }
+    openBtn.addEventListener('click', openModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+
+    async function fetchProjects(){
+      const res = await fetch('/api/projects');
+      const data = await res.json();
+      return data.projects || [];
+    }
+
+    function lastImage(project){
+      const imgs = (project.images||[]).filter(i=>i.date).sort((a,b)=> new Date(a.date)-new Date(b.date));
+      return imgs[imgs.length-1] || project.images?.[project.images.length-1] || null;
+    }
+
+    function renderProjects(list){
+      const q = (searchInput.value||'').toLowerCase();
+      const filtered = list.filter(p=> p.name.toLowerCase().includes(q));
+      projectsGrid.innerHTML = '';
+      if(!filtered.length){
+        projectsGrid.innerHTML = '<div class="muted">Aucun projet</div>';
+        return;
+      }
+      for(const p of filtered){
+        const img = lastImage(p);
+        const el = document.createElement('div');
+        el.className = 'project';
+        el.innerHTML = `
+          ${img? `<img src="${img.url}" alt="aperçu"/>` : `<div style="height:140px;border:1px dashed rgba(148,163,184,.25);border-radius:10px;display:grid;place-items:center" class="muted">Pas d'image</div>`}
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <div>
+              <div style="font-weight:700">${p.name}</div>
+              <div class="muted" style="font-size:12px">${p.startDate} → ${p.endDate}</div>
+            </div>
+            <span class="badge">${p.progress||0}%</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="button" href="/projets/${p.id}/visualisations">Visualisations</a>
+            <a class="button" href="/projets/${p.id}/analyse">Analyse</a>
+            <a class="button" href="/projets/${p.id}/courbes">Rapport courbe</a>
+            <a class="button" href="/projets/${p.id}/rapports">Rapports</a>
+          </div>
+        `;
+        projectsGrid.appendChild(el);
+      }
+    }
+
+    async function load(){
+      const list = await fetchProjects();
+      renderProjects(list);
+      searchInput.addEventListener('input', ()=> renderProjects(list));
+    }
+    load();
+
+    createBtn.addEventListener('click', async ()=>{
+      const payload = { name: pName.value.trim(), startDate: pStart.value, endDate: pEnd.value };
+      if(!payload.name || !payload.startDate || !payload.endDate){
+        alert('Veuillez remplir tous les champs.');
+        return;
+      }
+      const res = await fetch('/api/projects', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({error:'Erreur'}));
+        alert(err.error||'Erreur');
+        return;
+      }
+      const project = await res.json();
+      closeModal();
+      window.location.href = `/projets/${project.id}/visualisations`;
+    });
+  </script>
 </body>
 </html>

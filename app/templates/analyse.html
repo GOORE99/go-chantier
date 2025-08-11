@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analyse - {{ project.name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--accent:#22c55e;--border:#1f2937}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb}
+    .layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    aside{background:rgba(17,24,39,.7);border-right:1px solid rgba(148,163,184,.12);padding:12px;display:grid;align-content:start;gap:10px}
+    .project-title{font-weight:700}
+    .menu a{display:block;padding:8px 10px;border-radius:8px;color:#e5e7eb;text-decoration:none;border:1px solid rgba(148,163,184,.12);margin-top:4px}
+    .menu a.active{border-color:#22c55e}
+    header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(17,24,39,.7);border-bottom:1px solid rgba(148,163,184,.12)}
+    .container{padding:16px;display:grid;gap:12px}
+    select, button{background:#0b1220;border:1px solid rgba(148,163,184,.18);color:#e5e7eb;border-radius:10px;padding:8px}
+    img{max-width:100%;border-radius:12px;border:1px solid rgba(148,163,184,.18)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="project-title">{{ project.name }}</div>
+      <div class="menu">
+        <a href="/projets/{{ project.id }}/visualisations">Visualisations</a>
+        <a class="active" href="/projets/{{ project.id }}/analyse">Analyse</a>
+        <a href="/projets/{{ project.id }}/courbes">Rapport courbe</a>
+        <a href="/projets/{{ project.id }}/rapports">Rapports</a>
+      </div>
+    </aside>
+    <div>
+      <header>
+        <div>Analyse des images</div>
+      </header>
+      <div class="container">
+        <div class="row">
+          <select id="imgA"></select>
+          <select id="imgB"></select>
+          <button id="btnCalc">Calculer</button>
+        </div>
+        <div id="result">
+          <div class="muted">Sélectionnez deux images puis cliquez sur Calculer.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const project = {{ project | tojson }};
+    const imgA = document.getElementById('imgA');
+    const imgB = document.getElementById('imgB');
+    const result = document.getElementById('result');
+
+    function renderOptions(){
+      const imgs = project.images || [];
+      function opt(i){ return `<option value="${i.id}">${i.filename}${i.date? ' — '+i.date: ''}</option>`; }
+      imgA.innerHTML = imgs.map(opt).join('');
+      imgB.innerHTML = imgs.map(opt).join('');
+    }
+    renderOptions();
+
+    document.getElementById('btnCalc').addEventListener('click', async ()=>{
+      const a = imgA.value, b = imgB.value;
+      if(!a || !b){ alert('Sélectionnez deux images'); return; }
+      const res = await fetch(`/api/projects/${project.id}/analyse/diff`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ imageA: a, imageB: b })});
+      const data = await res.json();
+      if(!res.ok){ alert(data.error||'Erreur'); return; }
+      result.innerHTML = `<img src="${data.url}" alt="diff"/>`;
+    });
+  </script>
+</body>
+</html>
+
+
