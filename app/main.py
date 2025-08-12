@@ -1,48 +1,29 @@
-from __future__ import annotations
-
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from pathlib import Path
 import json
 import os
 import uuid
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List
-
-from flask import (
-    Flask,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    send_from_directory,
-    url_for,
-)
-from werkzeug.utils import secure_filename
+import shutil
 
 from .services.calcul import compute_image_difference
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "app" / "data"
+UPLOAD_DIR = BASE_DIR / "app" / "static" / "uploads"
+DIFF_DIR = UPLOAD_DIR / "diffs"
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-STATIC_DIR = BASE_DIR / "static"
-UPLOADS_DIR = STATIC_DIR / "uploads"
-
-
-def ensure_dirs() -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-ensure_dirs()
-
-app = Flask(
-    __name__, template_folder=str(BASE_DIR / "templates"), static_folder=str(STATIC_DIR)
-)
-
+for d in [DATA_DIR, UPLOAD_DIR, DIFF_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
 
 PROJECTS_FILE = DATA_DIR / "projects.json"
+IMAGES_FILE = DATA_DIR / "images.json"
+DOCS_FILE = DATA_DIR / "docs.json"
+PROGRESS_FILE = DATA_DIR / "progress.json"
 
 
-def read_json(path: Path, default: Any) -> Any:
+def _read_json(path: Path, default):
     if not path.exists():
         return default
     try:
@@ -52,256 +33,242 @@ def read_json(path: Path, default: Any) -> Any:
         return default
 
 
-def write_json(path: Path, data: Any) -> None:
+def _write_json(path: Path, payload) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.replace(path)
-
-
-def load_projects() -> List[Dict[str, Any]]:
-    db = read_json(PROJECTS_FILE, {"projects": []})
-    return db.get("projects", [])
-
-
-def save_projects(projects: List[Dict[str, Any]]) -> None:
-    write_json(PROJECTS_FILE, {"projects": projects})
-
-
-def get_project_or_404(project_id: str) -> Dict[str, Any]:
-    projects = load_projects()
-    for p in projects:
-        if p["id"] == project_id:
-            return p
-    return {}
-
-
-def persist_project(updated: Dict[str, Any]) -> None:
-    projects = load_projects()
-    for idx, p in enumerate(projects):
-        if p["id"] == updated["id"]:
-            projects[idx] = updated
-            save_projects(projects)
-            return
-    # if not found, append
-    projects.append(updated)
-    save_projects(projects)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
 @app.route("/")
-def home() -> str:
+def index_page():
     return render_template("index.html")
 
 
+@app.route("/suivi")
+def suivi_page():
+    return render_template("suivi.html")
+
+
+# -------- Projects --------
 @app.get("/api/projects")
 def api_list_projects():
-    return jsonify({"projects": load_projects()})
+    projects = _read_json(PROJECTS_FILE, [])
+    # augment with last image if any
+    images = _read_json(IMAGES_FILE, [])
+    project_id_to_last = {}
+    for img in images:
+        pid = img.get("projectId")
+        if not pid:
+            continue
+        dt = img.get("date") or ""
+        key = (dt, img.get("id"))
+        if pid not in project_id_to_last or key > project_id_to_last[pid][0]:
+            project_id_to_last[pid] = (key, img)
+    for p in projects:
+        p["lastImage"] = (project_id_to_last.get(p.get("id")) or (None, None))[1]
+    return jsonify(projects)
+
+
+@app.get("/api/projects/search")
+def api_search_projects():
+    q = (request.args.get("q") or "").strip().lower()
+    projects = _read_json(PROJECTS_FILE, [])
+    if not q:
+        return jsonify(projects)
+    matches = [p for p in projects if q in (p.get("name", "").lower())]
+    return jsonify(matches)
 
 
 @app.post("/api/projects")
 def api_create_project():
-    payload = request.get_json(silent=True) or request.form
+    payload = request.json or {}
     name = (payload.get("name") or "").strip()
     start_date = (payload.get("startDate") or "").strip()
     end_date = (payload.get("endDate") or "").strip()
     if not name or not start_date or not end_date:
-        return jsonify({"error": "Nom, date de début et date de fin sont requis"}), 400
-    try:
-        # validate dates
-        datetime.fromisoformat(start_date)
-        datetime.fromisoformat(end_date)
-    except Exception:
-        return jsonify({"error": "Format de date invalide (YYYY-MM-DD)"}), 400
-
-    project_id = uuid.uuid4().hex
-    # create directories
-    (UPLOADS_DIR / project_id).mkdir(parents=True, exist_ok=True)
-    (UPLOADS_DIR / project_id / "docs").mkdir(parents=True, exist_ok=True)
-    project = {
-        "id": project_id,
+        return jsonify({"error": "name, startDate, endDate requis"}), 400
+    projects = _read_json(PROJECTS_FILE, [])
+    new_project = {
+        "id": uuid.uuid4().hex,
         "name": name,
         "startDate": start_date,
         "endDate": end_date,
-        "images": [],
-        "documents": [],
-        "progress": 0,
-        "createdAt": datetime.utcnow().isoformat(),
+        "createdAt": datetime.utcnow().isoformat()
     }
-    projects = load_projects()
-    projects.append(project)
-    save_projects(projects)
-    return jsonify(project), 201
+    projects.append(new_project)
+    _write_json(PROJECTS_FILE, projects)
+    # initialize progress per project
+    progress_data = _read_json(PROGRESS_FILE, {})
+    progress_data[new_project["id"]] = {"progress": 0.0, "updated_at": datetime.utcnow().isoformat()}
+    _write_json(PROGRESS_FILE, progress_data)
+    return jsonify(new_project), 201
 
 
-@app.get("/projets/<project_id>")
-def project_redirect(project_id: str):
-    # Default to visualisations module
-    return redirect(url_for("module_visualisations", project_id=project_id))
+@app.get("/api/projects/<project_id>")
+def api_get_project(project_id: str):
+    projects = _read_json(PROJECTS_FILE, [])
+    for p in projects:
+        if p.get("id") == project_id:
+            return jsonify(p)
+    return jsonify({"error": "Projet introuvable"}), 404
 
 
-@app.get("/projets/<project_id>/visualisations")
-def module_visualisations(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return render_template("index.html", error="Projet introuvable"), 404
-    return render_template("visualisations.html", project=project)
+@app.delete("/api/projects/<project_id>")
+def api_delete_project(project_id: str):
+    # Remove project entry
+    projects = _read_json(PROJECTS_FILE, [])
+    projects = [p for p in projects if p.get("id") != project_id]
+    _write_json(PROJECTS_FILE, projects)
+
+    # Remove images entries and files
+    images = _read_json(IMAGES_FILE, [])
+    remaining_images = [i for i in images if i.get("projectId") != project_id]
+    _write_json(IMAGES_FILE, remaining_images)
+    proj_dir = UPLOAD_DIR / project_id
+    if proj_dir.exists():
+        try:
+            shutil.rmtree(proj_dir)
+        except Exception:
+            pass
+
+    # Remove docs entries (and already removed in rmtree above)
+    docs = _read_json(DOCS_FILE, [])
+    docs = [d for d in docs if d.get("projectId") != project_id]
+    _write_json(DOCS_FILE, docs)
+
+    # Remove progress
+    progress_data = _read_json(PROGRESS_FILE, {})
+    if project_id in progress_data:
+        del progress_data[project_id]
+        _write_json(PROGRESS_FILE, progress_data)
+
+    return ("", 204)
 
 
-@app.get("/projets/<project_id>/analyse")
-def module_analyse(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return render_template("index.html", error="Projet introuvable"), 404
-    return render_template("analyse.html", project=project)
+# -------- Images (orthophotos) --------
+@app.get("/api/images")
+def api_list_images():
+    project_id = request.args.get("project_id")
+    images = _read_json(IMAGES_FILE, [])
+    if project_id:
+        images = [i for i in images if i.get("projectId") == project_id]
+    images.sort(key=lambda x: (x.get("date") or "", x.get("filename") or ""))
+    return jsonify(images)
 
 
-@app.get("/projets/<project_id>/courbes")
-def module_courbes(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return render_template("index.html", error="Projet introuvable"), 404
-    return render_template("courbes.html", project=project)
-
-
-@app.get("/projets/<project_id>/rapports")
-def module_rapports(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return render_template("index.html", error="Projet introuvable"), 404
-    return render_template("rapports.html", project=project)
-
-
-@app.post("/api/projects/<project_id>/images")
-def api_upload_images(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return jsonify({"error": "Projet introuvable"}), 404
-    if "files" not in request.files and not request.files:
-        # Support both single file 'file' and multiple 'files'
-        # Flask combines in request.files; iterate over all values
-        pass
-    saved = []
-    for key in request.files:
-        file = request.files.get(key)
-        if not file or file.filename == "":
-            continue
-        filename = secure_filename(file.filename)
-        ext = os.path.splitext(filename)[1].lower()
-        if ext not in [".tif", ".tiff", ".png", ".jpg", ".jpeg"]:
-            continue
-        img_id = uuid.uuid4().hex
-        # preserve extension
-        out_name = f"{img_id}{ext}"
-        out_dir = UPLOADS_DIR / project_id
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / out_name
-        file.save(out_path)
-        item = {
-            "id": img_id,
-            "filename": out_name,
-            "url": f"/static/uploads/{project_id}/{out_name}",
-            "date": None,
-        }
-        project.setdefault("images", []).append(item)
-        saved.append(item)
-    persist_project(project)
-    return jsonify({"saved": saved, "project": project})
-
-
-@app.patch("/api/projects/<project_id>/images/<image_id>")
-def api_update_image(project_id: str, image_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return jsonify({"error": "Projet introuvable"}), 404
-    payload = request.get_json(silent=True) or {}
-    date = payload.get("date")
-    updated = None
-    for img in project.get("images", []):
-        if img["id"] == image_id:
-            img["date"] = date
-            updated = img
-            break
-    if updated is None:
-        return jsonify({"error": "Image introuvable"}), 404
-    # recompute progress: percentage of images with a date
-    images = project.get("images", [])
-    total = len(images)
-    done = len([i for i in images if i.get("date")])
-    project["progress"] = int(round((done / total) * 100)) if total else 0
-    persist_project(project)
-    return jsonify({"image": updated, "project": project})
-
-
-@app.post("/api/projects/<project_id>/analyse/diff")
-def api_analyse_diff(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return jsonify({"error": "Projet introuvable"}), 404
-    payload = request.get_json(silent=True) or request.form
-    img1_id = payload.get("imageA")
-    img2_id = payload.get("imageB")
-    if not img1_id or not img2_id:
-        return jsonify({"error": "Sélectionnez deux images"}), 400
-    def find_path(img_id: str) -> Path | None:
-        for it in project.get("images", []):
-            if it["id"] == img_id:
-                return UPLOADS_DIR / project_id / it["filename"]
-        return None
-    p1 = find_path(img1_id)
-    p2 = find_path(img2_id)
-    if not p1 or not p2 or (not p1.exists()) or (not p2.exists()):
-        return jsonify({"error": "Fichiers introuvables"}), 404
-    out_dir = UPLOADS_DIR / project_id / "diff"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_name = f"{uuid.uuid4().hex}.png"
-    out_path = out_dir / out_name
-    compute_image_difference(str(p1), str(p2), str(out_path))
-    url = f"/static/uploads/{project_id}/diff/{out_name}"
-    return jsonify({"url": url})
-
-
-@app.post("/api/projects/<project_id>/documents")
-def api_upload_document(project_id: str):
-    project = get_project_or_404(project_id)
-    if not project:
-        return jsonify({"error": "Projet introuvable"}), 404
+@app.post("/api/upload/image")
+def api_upload_image():
+    project_id = request.form.get("project_id")
+    date_str = request.form.get("date")
     file = request.files.get("file")
-    if not file or not file.filename:
-        return jsonify({"error": "Aucun fichier"}), 400
-    filename = secure_filename(file.filename)
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in [".pdf", ".doc", ".docx", ".xls", ".xlsx"]:
-        return jsonify({"error": "Type non supporté"}), 400
-    doc_id = uuid.uuid4().hex
-    out_name = f"{doc_id}{ext}"
-    out_dir = UPLOADS_DIR / project_id / "docs"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / out_name
-    file.save(out_path)
-    item = {
-        "id": doc_id,
-        "filename": out_name,
-        "originalName": filename,
-        "url": f"/static/uploads/{project_id}/docs/{out_name}",
-        "type": ext.lstrip("."),
-        "uploadedAt": datetime.utcnow().isoformat(),
-    }
-    project.setdefault("documents", []).append(item)
-    persist_project(project)
-    return jsonify(item), 201
+    if not file or not project_id:
+        return jsonify({"error": "file et project_id requis"}), 400
+    ext = os.path.splitext(file.filename)[1].lower()
+    new_id = uuid.uuid4().hex
+    subdir = UPLOAD_DIR / project_id
+    subdir.mkdir(parents=True, exist_ok=True)
+    filename = f"{new_id}{ext or '.tif'}"
+    save_path = subdir / filename
+    file.save(str(save_path))
+    url = f"/static/uploads/{project_id}/{filename}"
+    images = _read_json(IMAGES_FILE, [])
+    images.append({
+        "id": new_id,
+        "projectId": project_id,
+        "filename": filename,
+        "url": url,
+        "date": date_str
+    })
+    _write_json(IMAGES_FILE, images)
+    return jsonify({"id": new_id, "url": url, "date": date_str}), 201
 
 
-@app.get("/download/<path:filepath>")
-def download(filepath: str):
-    # Security: only within uploads dir
-    full = (UPLOADS_DIR / filepath).resolve()
-    if not str(full).startswith(str(UPLOADS_DIR.resolve())):
-        return "Forbidden", 403
-    if not full.exists():
-        return "Not found", 404
-    return send_from_directory(full.parent, full.name, as_attachment=True)
+# -------- Docs (rapports) --------
+@app.get("/api/docs")
+def api_list_docs():
+    project_id = request.args.get("project_id")
+    docs = _read_json(DOCS_FILE, [])
+    if project_id:
+        docs = [d for d in docs if d.get("projectId") == project_id]
+    return jsonify(docs)
+
+
+@app.post("/api/upload/doc")
+def api_upload_doc():
+    project_id = request.form.get("project_id")
+    file = request.files.get("file")
+    if not file or not project_id:
+        return jsonify({"error": "file et project_id requis"}), 400
+    ext = os.path.splitext(file.filename)[1].lower()
+    allowed = {".pdf", ".doc", ".docx", ".xls", ".xlsx"}
+    if ext not in allowed:
+        return jsonify({"error": "Type de fichier non supporté"}), 400
+    new_id = uuid.uuid4().hex
+    subdir = UPLOAD_DIR / project_id / "docs"
+    subdir.mkdir(parents=True, exist_ok=True)
+    filename = f"{new_id}{ext}"
+    save_path = subdir / filename
+    file.save(str(save_path))
+    url = f"/static/uploads/{project_id}/docs/{filename}"
+    docs = _read_json(DOCS_FILE, [])
+    docs.append({
+        "id": new_id,
+        "projectId": project_id,
+        "filename": filename,
+        "url": url,
+        "uploadedAt": datetime.utcnow().isoformat()
+    })
+    _write_json(DOCS_FILE, docs)
+    return jsonify({"id": new_id, "url": url}), 201
+
+
+# -------- Progress --------
+@app.post("/api/progress")
+def api_update_progress():
+    payload = request.json or {}
+    project_id = payload.get("project_id")
+    progress = payload.get("progress")
+    if project_id is None or progress is None:
+        return jsonify({"error": "project_id et progress requis"}), 400
+    progress_data = _read_json(PROGRESS_FILE, {})
+    progress_data[str(project_id)] = {"progress": float(progress), "updated_at": datetime.utcnow().isoformat()}
+    _write_json(PROGRESS_FILE, progress_data)
+    return jsonify(progress_data[str(project_id)])
+
+
+# -------- Analyse (difference) --------
+@app.post("/api/analyse/diff")
+def api_analyse_diff():
+    payload = request.json or {}
+    path_a = payload.get("imageA")
+    path_b = payload.get("imageB")
+    if not path_a or not path_b:
+        return jsonify({"error": "imageA et imageB requis (URL statique)"}), 400
+    # Convert URLs like /static/uploads/... to filesystem paths
+    def url_to_fs(url: str) -> Path:
+        url = url.split("?")[0]
+        assert url.startswith("/static/uploads/")
+        rel = url[len("/static/uploads/"):]
+        return UPLOAD_DIR / rel
+
+    src_a = url_to_fs(path_a)
+    src_b = url_to_fs(path_b)
+    if not (src_a.exists() and src_b.exists()):
+        return jsonify({"error": "Images introuvables"}), 404
+    out_name = f"diff_{uuid.uuid4().hex}.png"
+    out_path = DIFF_DIR / out_name
+    ok = compute_image_difference(str(src_a), str(src_b), str(out_path))
+    if not ok:
+        return jsonify({"error": "Echec du calcul"}), 500
+    return jsonify({"resultUrl": f"/static/uploads/diffs/{out_name}"})
+
+
+@app.get("/download/<path:filename>")
+def download_file(filename):
+    return send_from_directory(str(UPLOAD_DIR), filename, as_attachment=True)
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+

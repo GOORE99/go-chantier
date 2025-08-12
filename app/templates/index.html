@@ -3,158 +3,304 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Go-Chantier</title>
+  <title>GO-CHANTIER</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root { --bg:#0f172a; --card:#111827; --muted:#94a3b8; --accent:#22c55e; --border:#1f2937 }
+    :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--accent:#22c55e;--border:#1f2937}
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb;min-height:100vh;display:grid;grid-template-rows:auto 1fr;}
-    header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(17,24,39,.7);backdrop-filter: blur(10px);border-bottom:1px solid rgba(148,163,184,.12)}
-    .title{display:flex;align-items:center;gap:10px}
-    .title h1{margin:0;font-size:20px}
-    .button{appearance:none;display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.18);background:#0b1220;color:#e5e7eb;text-decoration:none;font-weight:600;cursor:pointer}
-    .button:hover{border-color:rgba(148,163,184,.35)}
-    .container{padding:22px;max-width:1100px;width:100%;margin:0 auto}
-    .card{background:rgba(17,24,39,.6);border:1px solid rgba(148,163,184,.12);border-radius:16px;padding:18px;}
-    .muted{color:var(--muted)}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
-    .search{display:flex;gap:10px}
-    input[type=text], input[type=date]{flex:1;background:#0b1220;border:1px solid rgba(148,163,184,.18);color:#e5e7eb;border-radius:10px;padding:10px}
-    .projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:16px}
-    .project{background:#0b1220;border:1px solid rgba(148,163,184,.18);border-radius:12px;padding:12px;display:grid;gap:8px}
-    .project img{width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid rgba(148,163,184,.12)}
-    .badge{font-size:11px;color:#a3e635;background:#1a2e22;border:1px solid #1f7a41;padding:2px 8px;border-radius:999px}
-    /* modal */
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb;min-height:100vh}
+    .layout{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(17,24,39,.6);backdrop-filter: blur(10px);border-bottom:1px solid rgba(148,163,184,.12)}
+    .brand{font-weight:800;letter-spacing:.3px}
+    .btn{appearance:none;border:1px solid rgba(148,163,184,.18);background:#0b1220;color:#e5e7eb;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer}
+    .btn:hover{border-color:rgba(148,163,184,.35)}
+    .container{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 54px)}
+    .sidebar{border-right:1px solid rgba(148,163,184,.12);background:rgba(17,24,39,.4);padding:12px}
+    .project-title{font-size:14px;color:var(--muted);margin:4px 0 10px}
+    .nav{display:grid;gap:8px}
+    .nav a{display:block;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.12);color:#e5e7eb;text-decoration:none;font-weight:600}
+    .nav a.active{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.08)}
+    .content{padding:12px}
+    .panel{background:rgba(17,24,39,.5);border:1px solid rgba(148,163,184,.12);border-radius:14px;padding:12px;height:100%}
+    .grid{display:grid;gap:12px}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    input,select{background:#0b1220;border:1px solid rgba(148,163,184,.18);color:#e5e7eb;border-radius:10px;padding:8px}
+    .projects-list{display:grid;gap:8px;margin-top:8px}
+    .project-card{border:1px solid rgba(148,163,184,.12);border-radius:12px;padding:10px;display:grid;grid-template-columns:72px 1fr;gap:10px;background:rgba(17,24,39,.35)}
+    .project-card img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid rgba(148,163,184,.12)}
+    .muted{color:var(--muted);font-size:12px}
+    .hidden{display:none}
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
-    .modal.open{display:flex}
-    .modal .panel{width:100%;max-width:520px;background:#0b1220;border:1px solid rgba(148,163,184,.2);border-radius:14px;padding:18px}
-    .row{display:grid;gap:8px;margin-top:10px}
-    label{font-size:12px;color:var(--muted)}
+    .modal .box{width:100%;max-width:520px;background:#0b1220;border:1px solid rgba(148,163,184,.18);border-radius:14px;padding:16px}
+    iframe{width:100%;height:70vh;border:0;border-radius:12px}
+    .file-list{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}
+    .file-item{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid rgba(148,163,184,.12);padding:8px;border-radius:10px}
   </style>
   </head>
 <body>
-  <header>
-    <div class="title"><h1>GO-CHANTIER</h1><span class="muted">Gestion des projets</span></div>
-    <button id="newProjectBtn" class="button">Nouveau projet</button>
-  </header>
-  <div class="container">
-    <div class="card">
-      <div class="search">
-        <input id="searchInput" type="text" placeholder="Rechercher un projet..." />
+  <div class="layout">
+    <header>
+      <div class="brand">GO-CHANTIER</div>
+      <div class="row">
+        <input id="searchInput" placeholder="Rechercher un projet..." />
+        <button id="newProjectBtn" class="btn">Nouveau projet</button>
+        <button id="deleteProjectBtn" class="btn" style="border-color:#ef4444;color:#fecaca">Supprimer le projet</button>
       </div>
-      <div id="projects" class="projects"></div>
+    </header>
+    <div class="container">
+      <aside class="sidebar">
+        <div id="projectName" class="project-title">Aucun projet</div>
+        <nav class="nav">
+          <a href="#visualisations" data-tab="visualisations" class="active">Visualisations</a>
+          <a href="#analyse" data-tab="analyse">Analyse</a>
+          <a href="#courbes" data-tab="courbes">Rapport courbe</a>
+          <a href="#rapports" data-tab="rapports">Rapports</a>
+        </nav>
+        <div style="margin-top:14px">
+          <div class="muted">Projets existants</div>
+          <div id="projects" class="projects-list"></div>
+        </div>
+      </aside>
+      <main class="content">
+        <section id="tab-visualisations" class="panel">
+          <iframe id="visFrame" src="/suivi"></iframe>
+        </section>
+        <section id="tab-analyse" class="panel hidden">
+          <div class="grid cols-2">
+            <div>
+              <div class="row">
+                <select id="imageA"></select>
+                <select id="imageB"></select>
+                <button id="runDiff" class="btn">Calculer</button>
+              </div>
+              <div class="muted">Comparer deux orthophotos d'un même projet</div>
+            </div>
+            <div>
+              <img id="diffPreview" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px;border:1px solid rgba(148,163,184,.12)" />
+            </div>
+          </div>
+        </section>
+        <section id="tab-courbes" class="panel hidden">
+          <canvas id="delaiChart" height="120"></canvas>
+        </section>
+        <section id="tab-rapports" class="panel hidden">
+          <div class="row">
+            <input id="docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" />
+            <button id="uploadDoc" class="btn">Importer</button>
+          </div>
+          <ul id="docsList" class="file-list"></ul>
+        </section>
+      </main>
     </div>
   </div>
 
-  <div id="newProjectModal" class="modal">
-    <div class="panel">
-      <h3 style="margin:0 0 8px">Créer un nouveau projet</h3>
-      <div class="row">
-        <label>Nom du projet</label>
-        <input id="pName" type="text" placeholder="Ex: Voie Express Abidjan" />
+  <div id="modal" class="modal">
+    <div class="box">
+      <div class="row" style="justify-content:space-between">
+        <div style="font-weight:700">Nouveau projet</div>
+        <button id="closeModal" class="btn">Fermer</button>
       </div>
-      <div class="grid">
+      <div class="grid" style="margin-top:10px">
+        <input id="pName" placeholder="Nom du projet" />
         <div class="row">
-          <label>Date de début</label>
-          <input id="pStart" type="date" />
+          <label>Début</label><input id="pStart" type="date" />
+          <label>Fin</label><input id="pEnd" type="date" />
         </div>
-        <div class="row">
-          <label>Date de fin</label>
-          <input id="pEnd" type="date" />
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
-        <button id="cancelModal" class="button">Annuler</button>
-        <button id="createProject" class="button" style="background:var(--accent);border-color:#178847">Créer</button>
+        <button id="createProject" class="btn">Créer</button>
       </div>
     </div>
   </div>
 
   <script>
-    const modal = document.getElementById('newProjectModal');
-    const openBtn = document.getElementById('newProjectBtn');
-    const cancelBtn = document.getElementById('cancelModal');
-    const createBtn = document.getElementById('createProject');
+    const tabs = document.querySelectorAll('.nav a');
+    const sections = {
+      visualisations: document.getElementById('tab-visualisations'),
+      analyse: document.getElementById('tab-analyse'),
+      courbes: document.getElementById('tab-courbes'),
+      rapports: document.getElementById('tab-rapports')
+    };
+    const visFrame = document.getElementById('visFrame');
+    tabs.forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        tabs.forEach(t=>t.classList.remove('active'));
+        a.classList.add('active');
+        Object.values(sections).forEach(s=>s.classList.add('hidden'));
+        const key = a.dataset.tab;
+        sections[key].classList.remove('hidden');
+        if(key === 'courbes') renderChart();
+        if(key === 'analyse') refreshImagesForAnalyse();
+        if(key === 'rapports') loadDocs();
+      });
+    });
+
+    const modal = document.getElementById('modal');
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    const closeModal = document.getElementById('closeModal');
+    const createProject = document.getElementById('createProject');
     const pName = document.getElementById('pName');
     const pStart = document.getElementById('pStart');
     const pEnd = document.getElementById('pEnd');
-    const projectsGrid = document.getElementById('projects');
+    const projectName = document.getElementById('projectName');
+    const projectsList = document.getElementById('projects');
     const searchInput = document.getElementById('searchInput');
+    const imageA = document.getElementById('imageA');
+    const imageB = document.getElementById('imageB');
+    const runDiff = document.getElementById('runDiff');
+    const diffPreview = document.getElementById('diffPreview');
+    const docFile = document.getElementById('docFile');
+    const uploadDoc = document.getElementById('uploadDoc');
+    const docsList = document.getElementById('docsList');
+    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
 
-    function openModal(){ modal.classList.add('open'); }
-    function closeModal(){ modal.classList.remove('open'); }
-    openBtn.addEventListener('click', openModal);
-    cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+    let currentProject = null; // {id,name,startDate,endDate}
+    let cachedProjects = [];
 
-    async function fetchProjects(){
-      const res = await fetch('/api/projects');
-      const data = await res.json();
-      return data.projects || [];
+    function showModal(){ modal.style.display='flex'; }
+    function hideModal(){ modal.style.display='none'; }
+    newProjectBtn.onclick = showModal;
+    closeModal.onclick = hideModal;
+    createProject.onclick = async ()=>{
+      const payload = {
+        name: pName.value.trim(),
+        startDate: pStart.value,
+        endDate: pEnd.value
+      };
+      const res = await fetch('/api/projects', {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      if(!res.ok){ alert('Champs manquants'); return; }
+      const pj = await res.json();
+      currentProject = pj;
+      projectName.textContent = pj.name;
+      if(visFrame) visFrame.src = '/suivi?project_id='+encodeURIComponent(pj.id);
+      hideModal();
+      await loadProjects();
+      refreshImagesForAnalyse();
+      renderChart();
+      loadDocs();
+    };
+
+    async function loadProjects(q=''){
+      const url = q ? '/api/projects/search?q='+encodeURIComponent(q) : '/api/projects';
+      const res = await fetch(url);
+      const arr = await res.json();
+      cachedProjects = arr;
+      projectsList.innerHTML = '';
+      arr.forEach(p=>{
+        const a = document.createElement('div');
+        a.className='project-card';
+        const imgUrl = p.lastImage?.url || '';
+        const img = document.createElement('img'); img.src = imgUrl; img.alt = p.name;
+        const info = document.createElement('div');
+        const title = document.createElement('div'); title.style.fontWeight='700'; title.textContent = p.name;
+        const meta = document.createElement('div'); meta.className='muted'; meta.textContent = `Début ${p.startDate} – Fin ${p.endDate}`;
+        a.appendChild(img); info.appendChild(title); info.appendChild(meta); a.appendChild(info);
+        a.style.cursor='pointer';
+        a.onclick = ()=>{ currentProject = p; projectName.textContent = p.name; if(visFrame) visFrame.src = '/suivi?project_id='+encodeURIComponent(p.id); refreshImagesForAnalyse(); renderChart(); loadDocs(); };
+        projectsList.appendChild(a);
+      });
     }
-
-    function lastImage(project){
-      const imgs = (project.images||[]).filter(i=>i.date).sort((a,b)=> new Date(a.date)-new Date(b.date));
-      return imgs[imgs.length-1] || project.images?.[project.images.length-1] || null;
-    }
-
-    function renderProjects(list){
-      const q = (searchInput.value||'').toLowerCase();
-      const filtered = list.filter(p=> p.name.toLowerCase().includes(q));
-      projectsGrid.innerHTML = '';
-      if(!filtered.length){
-        projectsGrid.innerHTML = '<div class="muted">Aucun projet</div>';
-        return;
+    searchInput.addEventListener('input', (e)=> loadProjects(e.target.value));
+    deleteProjectBtn.addEventListener('click', async ()=>{
+      if(!currentProject){ alert('Aucun projet sélectionné'); return; }
+      if(!confirm(`Supprimer le projet "${currentProject.name}" ?`)) return;
+      const res = await fetch('/api/projects/'+currentProject.id, { method:'DELETE' });
+      if(res.status === 204){
+        currentProject = null;
+        projectName.textContent = 'Aucun projet';
+        visFrame.src = '/suivi';
+        await loadProjects();
+        imageA.innerHTML=''; imageB.innerHTML=''; diffPreview.src='';
+        docsList.innerHTML='';
+        alert('Projet supprimé');
+      } else {
+        alert('Erreur lors de la suppression');
       }
-      for(const p of filtered){
-        const img = lastImage(p);
-        const el = document.createElement('div');
-        el.className = 'project';
-        el.innerHTML = `
-          ${img? `<img src="${img.url}" alt="aperçu"/>` : `<div style="height:140px;border:1px dashed rgba(148,163,184,.25);border-radius:10px;display:grid;place-items:center" class="muted">Pas d'image</div>`}
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-            <div>
-              <div style="font-weight:700">${p.name}</div>
-              <div class="muted" style="font-size:12px">${p.startDate} → ${p.endDate}</div>
-            </div>
-            <span class="badge">${p.progress||0}%</span>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <a class="button" href="/projets/${p.id}/visualisations">Visualisations</a>
-            <a class="button" href="/projets/${p.id}/analyse">Analyse</a>
-            <a class="button" href="/projets/${p.id}/courbes">Rapport courbe</a>
-            <a class="button" href="/projets/${p.id}/rapports">Rapports</a>
-          </div>
-        `;
-        projectsGrid.appendChild(el);
-      }
-    }
-
-    async function load(){
-      const list = await fetchProjects();
-      renderProjects(list);
-      searchInput.addEventListener('input', ()=> renderProjects(list));
-    }
-    load();
-
-    createBtn.addEventListener('click', async ()=>{
-      const payload = { name: pName.value.trim(), startDate: pStart.value, endDate: pEnd.value };
-      if(!payload.name || !payload.startDate || !payload.endDate){
-        alert('Veuillez remplir tous les champs.');
-        return;
-      }
-      const res = await fetch('/api/projects', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({error:'Erreur'}));
-        alert(err.error||'Erreur');
-        return;
-      }
-      const project = await res.json();
-      closeModal();
-      window.location.href = `/projets/${project.id}/visualisations`;
     });
+
+    async function refreshImagesForAnalyse(){
+      imageA.innerHTML = ''; imageB.innerHTML = '';
+      if(!currentProject){ return; }
+      const res = await fetch('/api/images?project_id='+currentProject.id);
+      const imgs = await res.json();
+      for(const img of imgs){
+        const opt1 = document.createElement('option'); opt1.value = img.url; opt1.textContent = `${img.date || ''} — ${img.filename}`;
+        const opt2 = opt1.cloneNode(true);
+        imageA.appendChild(opt1); imageB.appendChild(opt2);
+      }
+    }
+    runDiff.onclick = async ()=>{
+      if(!imageA.value || !imageB.value){ alert('Choisissez deux images'); return; }
+      const res = await fetch('/api/analyse/diff', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ imageA: imageA.value, imageB: imageB.value }) });
+      const json = await res.json();
+      if(!res.ok){ alert(json.error||'Erreur'); return; }
+      diffPreview.src = json.resultUrl;
+    };
+
+    let chartInstance = null;
+    async function renderChart(){
+      const ctx = document.getElementById('delaiChart');
+      if(!currentProject){ ctx.getContext('2d').font='14px Inter'; ctx.getContext('2d').fillText('Sélectionnez un projet', 10, 30); return; }
+      const start = new Date(currentProject.startDate);
+      const end = new Date(currentProject.endDate);
+      const days = Math.max(1, Math.ceil((end - start) / (1000*60*60*24)));
+      const labels = Array.from({length: days}, (_,i)=> i+1);
+      // planned: linear from 0 to 100
+      const planned = labels.map(d=> Math.round((d-1)/(days-1)*100));
+      // observed: based on image dates
+      const res = await fetch('/api/images?project_id='+currentProject.id);
+      const imgs = await res.json();
+      const dates = imgs.filter(i=>i.date).map(i=> new Date(i.date)).sort((a,b)=>a-b);
+      const observed = labels.map(()=>0);
+      if(dates.length){
+        const last = dates[dates.length-1];
+        const elapsed = Math.min(days-1, Math.max(0, Math.ceil((last - start)/(1000*60*60*24))));
+        for(let i=0;i<labels.length;i++){
+          observed[i] = i <= elapsed ? Math.round((i/elapsed)*100) : 100;
+        }
+      }
+      if(chartInstance){ chartInstance.destroy(); }
+      chartInstance = new Chart(ctx, {
+        type:'line',
+        data:{ labels, datasets:[
+          { label:'Délai prévu', data: planned, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.2)' },
+          { label:'Délai observé', data: observed, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.2)' }
+        ]},
+        options:{ responsive:true, scales:{ y:{ beginAtZero:true, max:100 } } }
+      });
+    }
+
+    async function loadDocs(){
+      docsList.innerHTML = '';
+      if(!currentProject) return;
+      const res = await fetch('/api/docs?project_id='+currentProject.id);
+      const docs = await res.json();
+      for(const d of docs){
+        const li = document.createElement('li'); li.className='file-item';
+        const name = document.createElement('span'); name.textContent = d.filename;
+        const a = document.createElement('a'); a.className='btn'; a.textContent='Télécharger'; a.href = d.url; a.download = d.filename;
+        li.appendChild(name); li.appendChild(a); docsList.appendChild(li);
+      }
+    }
+    uploadDoc.onclick = async ()=>{
+      if(!currentProject){ alert('Sélectionnez un projet'); return; }
+      if(!docFile.files.length){ alert('Choisissez un fichier'); return; }
+      const fd = new FormData();
+      fd.append('project_id', currentProject.id);
+      fd.append('file', docFile.files[0]);
+      const res = await fetch('/api/upload/doc', { method:'POST', body: fd });
+      if(!res.ok){ const j = await res.json(); alert(j.error||'Erreur'); return; }
+      docFile.value = '';
+      loadDocs();
+    };
+
+    // Initial load
+    loadProjects();
   </script>
 </body>
 </html>

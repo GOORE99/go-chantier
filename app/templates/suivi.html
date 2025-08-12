@@ -68,6 +68,7 @@
           <input id="dateInput" type="date" />
           <button id="addDateBtn" class="btn">Ajouter date</button>
           <button id="addNoteBtn" class="btn">Ajouter commentaire</button>
+          <button id="saveLayerBtn" class="btn">Enregistrer sur serveur</button>
         </div>
         <button id="prevBtn" class="btn">⟵ Revenir</button>
         <button id="nextBtn" class="btn">Avancer ⟶</button>
@@ -92,6 +93,10 @@
             <div class="progress-bar"><span id="progressFill"></span></div>
             <span id="progressText" class="badge">0%</span>
           </div>
+          <div class="controls" style="margin-top:8px">
+            <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="Entrer %" />
+            <button id="saveProgressBtn" class="btn">Enregistrer</button>
+          </div>
         </div>
         <div class="group">
           <div class="label">Couches importées</div>
@@ -107,6 +112,12 @@
   </div>
 
   <script>
+    // Helpers
+    function getProjectId(){
+      const sp = new URLSearchParams(location.search);
+      return sp.get('project_id');
+    }
+
     // Map init
     const map = L.map('map', { zoomControl: true }).setView([5.35, -4.02], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -191,7 +202,7 @@
         });
         layer.addTo(map);
         const thisIndex = importedLayers.length;
-        importedLayers.push({ name: file.name, layer, date: null });
+        importedLayers.push({ name: file.name, layer, date: null, file });
         // fit map to layer
         const bounds = layer.getBounds();
         if(bounds && bounds.isValid()) map.fitBounds(bounds);
@@ -235,6 +246,9 @@
     const nextBtn = document.getElementById('nextBtn');
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
+    const saveLayerBtn = document.getElementById('saveLayerBtn');
+    const progressInput = document.getElementById('progressInput');
+    const saveProgressBtn = document.getElementById('saveProgressBtn');
 
     let slider;
     let timelineData = [];// [{date: Date, name: string, index: number}]
@@ -271,7 +285,7 @@
       renderTimeline();
     }
 
-    addDateBtn.addEventListener('click', ()=>{
+    addDateBtn.addEventListener('click', async ()=>{
       if(!dateInput.value) return alert('Choisissez une date');
       const d = new Date(dateInput.value);
       if(isNaN(+d)) return alert('Date invalide');
@@ -285,6 +299,19 @@
       selectedInfo.textContent = `Sélection: ${importedLayers[selectedLayerIndex].name} — ${d.toLocaleDateString()}`;
       refreshTimelineFromLayers();
       refreshProgress();
+      // Auto-save if project selected and we have file
+      const pid = getProjectId();
+      const item = importedLayers[selectedLayerIndex];
+      if(pid && item.file){
+        try{
+          const fd = new FormData();
+          fd.append('project_id', pid);
+          fd.append('date', d.toISOString().slice(0,10));
+          fd.append('file', item.file);
+          const res = await fetch('/api/upload/image', { method: 'POST', body: fd });
+          if(res.ok){ if(li) li.style.borderColor = 'rgba(34,197,94,.6)'; }
+        }catch(_e){}
+      }
     });
 
     // Add note as speech bubble
@@ -319,6 +346,45 @@
       progressFill.style.width = pct + '%';
       progressText.textContent = pct + '%';
     }
+
+    // Manual save layer
+    saveLayerBtn.addEventListener('click', async ()=>{
+      const pid = getProjectId();
+      if(!pid) return alert('Projet non défini');
+      if(selectedLayerIndex === null) return alert('Sélectionnez une couche');
+      const item = importedLayers[selectedLayerIndex];
+      if(!item.file) return alert('Aucun fichier sélectionné');
+      const d = item.date ? new Date(item.date) : (dateInput.value ? new Date(dateInput.value) : null);
+      if(!d || isNaN(+d)) return alert('Définissez une date');
+      const fd = new FormData();
+      fd.append('project_id', pid);
+      fd.append('date', d.toISOString().slice(0,10));
+      fd.append('file', item.file);
+      const res = await fetch('/api/upload/image', { method:'POST', body: fd });
+      if(res.ok){
+        const li = layersList.children[selectedLayerIndex];
+        if(li) li.style.borderColor = 'rgba(34,197,94,.6)';
+        alert('Image enregistrée');
+      } else {
+        alert('Erreur lors de l\'enregistrement');
+      }
+    });
+
+    // Save progress
+    saveProgressBtn.addEventListener('click', async ()=>{
+      const pid = getProjectId();
+      if(!pid) return alert('Projet non défini');
+      const val = Number(progressInput.value);
+      if(isNaN(val) || val < 0 || val > 100) return alert('Entrez un pourcentage 0-100');
+      const res = await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ project_id: pid, progress: val }) });
+      if(res.ok){
+        progressFill.style.width = val + '%';
+        progressText.textContent = val + '%';
+        alert('Taux enregistré');
+      } else {
+        alert('Erreur de sauvegarde');
+      }
+    });
   </script>
 
   <style>
