@@ -1,396 +1,473 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Suivi - GO-CHANTIER</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-  <!-- Leaflet core -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-  <!-- georaster + GeoTIFF loader -->
-  <script src="https://unpkg.com/geotiff@2.1.3/dist-browser/geotiff.min.js"></script>
-  <script src="https://unpkg.com/georaster@1.6.0/dist/georaster.browser.min.js"></script>
-  <script src="https://unpkg.com/georaster-layer-for-leaflet@3.12.0/dist/georaster-layer-for-leaflet.min.js"></script>
-
-  <!-- Leaflet Draw for mesures -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-
-  <!-- noUiSlider for timeline -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.js"></script>
-
-  <!-- Turf.js for géodésiques (surfaces) -->
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-
-  <style>
-    :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--accent:#22c55e;--border:#1f2937}
-    *{box-sizing:border-box}
-    html,body{height:100%;}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb}
-    .layout{display:grid;grid-template-rows:auto 1fr auto;min-height:100vh}
-    header,footer{background:rgba(17,24,39,.7);backdrop-filter: blur(10px);border-bottom:1px solid rgba(148,163,184,.12)}
-    header{display:flex;gap:12px;align-items:center;padding:10px 14px}
-    header h1{font-size:18px;margin:0 8px 0 0}
-    .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .btn{appearance:none;border:1px solid rgba(148,163,184,.18);background:#0b1220;color:#e5e7eb;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer}
-    .btn:hover{border-color:rgba(148,163,184,.35)}
-    .btn[disabled]{opacity:.5;cursor:not-allowed}
-    .controls{display:flex;gap:10px;align-items:center}
-    .controls input[type=date]{background:#0b1220;border:1px solid rgba(148,163,184,.18);color:#e5e7eb;border-radius:10px;padding:8px}
-    .controls input[type=file]{color:#e5e7eb}
-    .content{display:grid;grid-template-columns:1fr 320px;gap:12px;padding:12px}
-    #map{width:100%;height:calc(100vh - 190px);border:1px solid rgba(148,163,184,.12);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
-    .sidepanel{background:rgba(17,24,39,.6);border:1px solid rgba(148,163,184,.12);border-radius:14px;padding:12px;display:grid;gap:12px}
-    .group{border:1px dashed rgba(148,163,184,.18);border-radius:12px;padding:10px}
-    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    #timeline{margin:8px 0}
-    .progress{display:flex;align-items:center;gap:8px}
-    .progress-bar{flex:1;height:10px;background:#111827;border-radius:6px;overflow:hidden;border:1px solid rgba(148,163,184,.15)}
-    .progress-bar > span{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#16a34a)}
-    footer{border-top:1px solid rgba(148,163,184,.12);padding:8px 14px;color:var(--muted)}
-    .badge{font-size:11px;color:#a3e635;background:#1a2e22;border:1px solid #1f7a41;padding:2px 8px;border-radius:999px}
-  </style>
-</head>
-<body>
-  <div class="layout">
-    <header>
-      <h1>Suivi de chantier</h1>
-      <div class="toolbar">
-        <div class="controls">
-          <label class="btn" for="geotiffInput">Importer GeoTIFF</label>
-          <input id="geotiffInput" type="file" accept=".tif,.tiff" multiple style="display:none" />
-          <input id="dateInput" type="date" />
-          <button id="addDateBtn" class="btn">Ajouter date</button>
-          <button id="addNoteBtn" class="btn">Ajouter commentaire</button>
-          <button id="saveLayerBtn" class="btn">Enregistrer sur serveur</button>
-        </div>
-        <button id="prevBtn" class="btn">⟵ Revenir</button>
-        <button id="nextBtn" class="btn">Avancer ⟶</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GO-CHANTIER - Suivi</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/geotiff@2.1.3/dist-browser/geotiff.min.js"></script>
+    <script src="https://unpkg.com/proj4@2.9.0/dist/proj4.js"></script>
+    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
+    <script src="https://unpkg.com/georaster@1.7.1/dist/georaster.browser.min.js"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet@3.1.0/dist/georaster-layer-for-leaflet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+      :root { --sky: #7ec8e3; --text:#000; --bg:#fff; }
+      body { margin:0; display:flex; height:100vh; font-family: Arial, sans-serif; }
+      * { font-size:14px; font-weight:700; }
+      aside { width: 260px; background: var(--sky); color:#fff; display:flex; flex-direction:column; }
+      .brand { padding: 14px 16px; font-size: 20px; font-weight: 800; background: rgba(255,255,255,0.1); }
+      .project-name { padding: 10px 16px; background: rgba(0,0,0,0.08); color:#fff; }
+      .nav { display:flex; flex-direction:column; gap: 6px; padding: 12px; }
+      .nav button { background: rgba(255,255,255,0.2); color:#fff; border:none; padding: 10px; border-radius:8px; cursor:pointer; text-align:left; }
+      main { flex:1; background:#f5f8fb; display:flex; flex-direction:column; }
+      header { background: var(--sky); color:#fff; padding: 10px 16px; display:flex; justify-content: space-between; align-items:center; }
+      header .right { display:flex; gap: 8px; }
+      .btn { background:#0d6efd; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+      .content { padding: 12px; background:#fff; flex:1; margin: 12px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow:auto; }
+      .hidden { display:none; }
+      #map { width: 100%; height: 70vh; background:#e9ecef; }
+      .toolbar { display:flex; gap:10px; margin-bottom:10px; align-items:center; }
+      input, select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; background:#fff; color:#000; }
+      label { color:#000; }
+      .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+      .images-list { display:flex; gap:6px; flex-wrap:wrap; }
+      .images-list img { width: 120px; height: 80px; object-fit: cover; border:2px solid #ddd; border-radius:6px; }
+      .bubble { background:#fff; border: 1px solid #333; padding:6px 8px; border-radius: 12px; }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <div class="brand">GO-CHANTIER</div>
+      <div class="project-name" id="projectName">Projet</div>
+      <div class="nav">
+        <button data-tab="viz">Visualisations</button>
+        <button data-tab="analyse">Analyse</button>
+        <button data-tab="courbes">Rapport courbe</button>
+        <button data-tab="rapports">Rapports</button>
       </div>
+    </aside>
+    <main>
+    <header>
+        <div>Suivi de projet</div>
+        <div class="right">
+          <input type="number" id="progress" placeholder="% avancement" min="0" max="100" step="1" />
+          <button class="btn" id="btn-save-progress">Enregistrer</button>
+          <a class="btn" href="/">Projets</a>
+        </div>
     </header>
+      <div class="content">
+        <section id="tab-viz">
+          <div class="toolbar row">
+            <form id="form-upload" class="row" onsubmit="return false;">
+              <input type="file" id="file" accept=".tif,.tiff,.geotiff,.png,.jpg,.jpeg" />
+              <input type="date" id="img-date" />
+              <button class="btn" id="btn-upload">Importer</button>
+            </form>
+            <button class="btn" id="btn-zoom-in"><i class="fa fa-magnifying-glass-plus"></i></button>
+            <button class="btn" id="btn-zoom-out"><i class="fa fa-magnifying-glass-minus"></i></button>
+            <button class="btn" id="btn-measure-dist">Mesurer distance</button>
+            <button class="btn" id="btn-measure-area">Mesurer surface</button>
+            <button class="btn" id="btn-add-comment">Ajouter commentaire</button>
+        </div>
+        <div id="map"></div>
+          <div class="images-list" id="thumbs"></div>
+        </section>
 
-    <div class="content">
-      <div id="map"></div>
-      <aside class="sidepanel">
-        <div class="group">
-          <div class="label">Chronogramme (dates de prises de vue)</div>
-          <div id="timeline"></div>
-          <div id="timelineDates" class="label"></div>
-        </div>
-        <div class="group">
-          <div class="label">Mesures</div>
-          <div id="measurements" class="label">Aucune mesure</div>
-        </div>
-        <div class="group">
-          <div class="label">Taux d'avancement</div>
-          <div class="progress">
-            <div class="progress-bar"><span id="progressFill"></span></div>
-            <span id="progressText" class="badge">0%</span>
+        <section id="tab-analyse" class="hidden">
+          <div class="row">
+            <select id="img-a"></select>
+            <select id="img-b"></select>
+            <button class="btn" id="btn-calc">Calculer</button>
           </div>
-          <div class="controls" style="margin-top:8px">
-            <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="Entrer %" />
-            <button id="saveProgressBtn" class="btn">Enregistrer</button>
+          <div class="row" style="margin-top:10px; align-items:flex-start;">
+            <img id="diff-out" style="max-width:48%; border:1px solid #ccc;" />
+            <canvas id="pie" height="180" style="flex:1; max-width:48%;"></canvas>
           </div>
-        </div>
-        <div class="group">
-          <div class="label">Couches importées</div>
-          <ul id="layersList" class="label" style="list-style:none;padding:0;margin:0;"></ul>
-          <div class="label" id="selectedInfo">Aucune couche sélectionnée</div>
-        </div>
-      </aside>
+        </section>
+
+        <section id="tab-courbes" class="hidden">
+          <canvas id="chart" height="120"></canvas>
+        </section>
+
+        <section id="tab-rapports" class="hidden">
+          <div class="row">
+            <input type="file" id="doc-file" accept=".pdf,.doc,.docx,.xls,.xlsx" />
+            <button class="btn" id="btn-doc-upload">Importer</button>
+          </div>
+          <div id="docs"></div>
+      </section>
     </div>
+    </main>
 
-    <footer>
-      Molette pour zoomer/dézoomer. Utilisez l'outil polyligne/polygone pour les mesures.
-    </footer>
-  </div>
+    <script>
+      // Utilities
+      const qs = new URLSearchParams(location.search);
+      const projectId = qs.get('project_id');
+      if(!projectId){ alert('project_id manquant'); }
 
-  <script>
-    // Helpers
-    function getProjectId(){
-      const sp = new URLSearchParams(location.search);
-      return sp.get('project_id');
-    }
+      function $(id){ return document.getElementById(id); }
+      async function fetchJSON(url){ const r = await fetch(url); return r.json(); }
+      async function postJSON(url, data){ const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)}); if(!r.ok) throw new Error('Erreur'); return r.json(); }
 
-    // Map init
-    const map = L.map('map', { zoomControl: true }).setView([5.35, -4.02], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 22, attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-
-    // Draw controls for measures
-    const drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
-    const drawControl = new L.Control.Draw({
-      draw: {
-        marker: true, polyline: true, polygon: true, rectangle: true, circle: false, circlemarker: false
-      },
-      edit: { featureGroup: drawnItems }
-    });
-    map.addControl(drawControl);
-
-    const measurementsBox = document.getElementById('measurements');
-    function formatDistance(meters){
-      if(meters < 1000) return meters.toFixed(1) + ' m';
-      return (meters/1000).toFixed(2) + ' km';
-    }
-    function formatArea(sqm){
-      if(sqm < 1e6) return sqm.toFixed(1) + ' m²';
-      return (sqm/1e6).toFixed(2) + ' km²';
-    }
-    map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer;
-      drawnItems.addLayer(layer);
-      let text = '';
-      if(layer instanceof L.Polygon || layer instanceof L.Rectangle){
-        try{
-          const latlngs = layer.getLatLngs()[0];
-          const ring = latlngs.map(ll => [ll.lng, ll.lat]);
-          if(ring.length && (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1])){
-            ring.push([ring[0][0], ring[0][1]]);
+      // Tabs
+      const tabs = { viz: $('tab-viz'), analyse: $('tab-analyse'), courbes: $('tab-courbes'), rapports: $('tab-rapports') };
+      for(const btn of document.querySelectorAll('.nav button')){
+        btn.onclick = ()=>{
+          Object.values(tabs).forEach(s=> s.classList.add('hidden'));
+          const tab = btn.dataset.tab;
+          tabs[tab].classList.remove('hidden');
+          if(tab === 'courbes') {
+            updateChart();
           }
-          const polygon = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] } };
-          const area = turf.area(polygon);
-          text = 'Surface: ' + formatArea(area);
-        } catch(err){
-          text = 'Surface: non calculée';
-        }
-      } else if(layer instanceof L.Polyline){
-        const latlngs = layer.getLatLngs();
-        let dist = 0;
-        for(let i=1;i<latlngs.length;i++){
-          dist += latlngs[i-1].distanceTo(latlngs[i]);
-        }
-        text = 'Distance: ' + formatDistance(dist);
-      } else if(layer instanceof L.Marker){
-        text = 'Point ajouté';
+          if(tab === 'viz') {
+            setTimeout(()=> map.invalidateSize(), 50);
+          }
+        };
       }
-      measurementsBox.textContent = text || 'Mesure ajoutée';
-    });
 
-    // Import GeoTIFF logic
-    const geotiffInput = document.getElementById('geotiffInput');
-    const layersList = document.getElementById('layersList');
-    const selectedInfo = document.getElementById('selectedInfo');
-    const importedLayers = [];
-    let selectedLayerIndex = null;
-    geotiffInput.addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files || []);
-      for (const file of files) {
-        const arrayBuffer = await file.arrayBuffer();
-        const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
-        const image = await tiff.getImage();
-        const georaster = await parseGeoraster(arrayBuffer);
-        const layer = new GeoRasterLayer({
-          georaster,
-          opacity: 0.8,
-          pixelValuesToColorFn: values => {
-            const [v1,v2,v3] = values;
-            const n = georaster.numberOfRasters;
-            if(n >= 3){
-              return `rgb(${v1||0}, ${v2||0}, ${v3||0})`;
+      // Map + GeoTIFF viewer
+      let map = L.map('map').setView([0,0], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map);
+      let currentLayer = null;
+      $('btn-zoom-in').onclick = ()=> map.zoomIn();
+      $('btn-zoom-out').onclick = ()=> map.zoomOut();
+
+      const _epsgCache = {};
+      async function ensureProjDefinition(code){
+        if(!code) return null;
+        if(proj4 && proj4.defs && proj4.defs(code)) return code;
+        if(_epsgCache[code]){ proj4.defs(code, _epsgCache[code]); return code; }
+        try {
+          const r = await fetch(`https://epsg.io/${code.replace('EPSG:','')}.proj4`);
+          if(!r.ok) throw new Error('epsg.io ' + r.status);
+          const def = (await r.text()).trim();
+          if(def){ _epsgCache[code] = def; proj4.defs(code, def); return code; }
+        } catch(e){ console.warn('EPSG fetch failed', e); }
+        return null;
+      }
+
+      async function addGeoTIFF(url){
+        try {
+          const response = await fetch(url, { cache: 'no-store' });
+          if(!response.ok){ throw new Error('HTTP ' + response.status); }
+          const arrayBuffer = await response.arrayBuffer();
+          if(typeof parseGeoraster !== 'function') throw new Error('parseGeoraster indisponible');
+          // Extract EPSG from GeoKeys
+          let epsg = null, bbox = null;
+          try {
+            const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+            const image = await tiff.getImage();
+            const keys = image.getGeoKeys?.() || {};
+            const proj = keys.ProjectedCSTypeGeoKey || keys.GeographicTypeGeoKey;
+            if(proj) epsg = `EPSG:${proj}`;
+            if(image.getBoundingBox) bbox = image.getBoundingBox();
+          } catch(e){ console.warn('GeoKeys read failed', e); }
+          const georaster = await parseGeoraster(arrayBuffer);
+          if(epsg) georaster.projection = epsg;
+          if(epsg) await ensureProjDefinition(epsg);
+          if(currentLayer){ map.removeLayer(currentLayer); }
+          currentLayer = new GeoRasterLayer({ georaster, opacity: 1.0, resampleMethod: 'nearest' });
+          currentLayer.addTo(map);
+          try { map.fitBounds(currentLayer.getBounds()); } catch(e) { console.warn('fitBounds failed', e); }
+        } catch (e){
+          console.error('GeoTIFF error:', e);
+          // Secondary fallback: render with geotiff.js to a canvas, then overlay with projected bounds if possible
+          try {
+            const response2 = await fetch(url, { cache: 'no-store' });
+            const buf2 = await response2.arrayBuffer();
+            const tiff = await GeoTIFF.fromArrayBuffer(buf2);
+            const image = await tiff.getImage();
+            const width = image.getWidth();
+            const height = image.getHeight();
+            let data = await image.readRasters({ interleave: true });
+            // Downscale if too large
+            const maxSide = Math.max(width, height);
+            const scale = maxSide > 2048 ? 2048 / maxSide : 1;
+            const outW = Math.max(1, Math.round(width * scale));
+            const outH = Math.max(1, Math.round(height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = outW; canvas.height = outH;
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.createImageData(outW, outH);
+            const channels = image.getSamplesPerPixel();
+            if(channels === 1){
+              let min = Infinity, max = -Infinity;
+              for(let i=0;i<data.length;i++){ const v=data[i]; if(v<min)min=v; if(v>max)max=v; }
+              const norm = 255/(max-min || 1);
+              for(let y=0;y<outH;y++){
+                for(let x=0;x<outW;x++){
+                  const srcX = Math.floor(x/scale); const srcY = Math.floor(y/scale);
+                  const srcIdx = (srcY*width + srcX);
+                  const v = Math.max(0, Math.min(255, Math.round((data[srcIdx]-min)*norm)));
+                  const di = (y*outW + x)*4;
+                  imgData.data[di]=v; imgData.data[di+1]=v; imgData.data[di+2]=v; imgData.data[di+3]=255;
+                }
+              }
+            } else {
+              const mins=[Infinity,Infinity,Infinity], maxs=[-Infinity,-Infinity,-Infinity];
+              for(let i=0;i<data.length; i+=channels){
+                for(let c=0;c<3;c++){ const v=data[i+c]; if(v<mins[c])mins[c]=v; if(v>maxs[c])maxs[c]=v; }
+              }
+              const norms=[0,0,0]; for(let c=0;c<3;c++){ norms[c] = 255/(maxs[c]-mins[c] || 1); }
+              for(let y=0;y<outH;y++){
+                for(let x=0;x<outW;x++){
+                  const srcX = Math.floor(x/scale); const srcY = Math.floor(y/scale);
+                  const si = (srcY*width + srcX)*channels;
+                  const di = (y*outW + x)*4;
+                  for(let c=0;c<3;c++){
+                    const v = Math.max(0, Math.min(255, Math.round((data[si+c]-mins[c])*norms[c])));
+                    imgData.data[di+c]=v;
+                  }
+                  imgData.data[di+3]=255;
+                }
+              }
             }
-            const g = Math.min(255, Math.max(0, Math.round((v1||0))));
-            return `rgb(${g}, ${g}, ${g})`;
+            ctx.putImageData(imgData, 0, 0);
+            const dataUrl = canvas.toDataURL('image/png');
+            // Try compute bounds from GeoTIFF bbox and EPSG
+            let bounds = [[-60,-180],[60,180]];
+            try {
+              const keys = image.getGeoKeys?.() || {};
+              const proj = keys.ProjectedCSTypeGeoKey || keys.GeographicTypeGeoKey;
+              const code = proj ? `EPSG:${proj}` : null;
+              if(code){
+                await ensureProjDefinition(code);
+                const bb = image.getBoundingBox?.();
+                if(bb && Array.isArray(bb)){
+                  const min = proj4(code, 'EPSG:4326', [bb[0], bb[1]]);
+                  const max = proj4(code, 'EPSG:4326', [bb[2], bb[3]]);
+                  bounds = [[min[1], min[0]],[max[1], max[0]]];
+                }
+              }
+            } catch(e3){ console.warn('Bounds projection failed', e3); }
+            if(currentLayer){ map.removeLayer(currentLayer); }
+            currentLayer = L.imageOverlay(dataUrl, bounds).addTo(map);
+            map.fitBounds(bounds);
+          } catch (e2){
+            console.error('Canvas fallback error:', e2);
+            alert("Impossible d'afficher le GeoTIFF. Vérifiez le fichier.");
           }
-        });
-        layer.addTo(map);
-        const thisIndex = importedLayers.length;
-        importedLayers.push({ name: file.name, layer, date: null, file });
-        // fit map to layer
-        const bounds = layer.getBounds();
-        if(bounds && bounds.isValid()) map.fitBounds(bounds);
-        // add UI item
-        const li = document.createElement('li');
-        li.style.padding = '6px 8px';
-        li.style.borderRadius = '8px';
-        li.style.cursor = 'pointer';
-        li.dataset.index = String(thisIndex);
-        li.innerHTML = `<input type="checkbox" checked /> <span class="layer-name">${file.name}</span> <span class="layer-date"></span>`;
-        const chk = li.querySelector('input');
-        chk.addEventListener('change', () => {
-          if(chk.checked) layer.addTo(map); else map.removeLayer(layer);
-        });
-        li.addEventListener('click', (ev)=>{
-          if(ev.target.tagName && ev.target.tagName.toLowerCase()==='input') return;
-          const allItems = layersList.querySelectorAll('li');
-          allItems.forEach(el=>{ el.style.background=''; el.style.border=''; });
-          li.style.background = 'rgba(148,163,184,.08)';
-          li.style.border = '1px solid rgba(148,163,184,.25)';
-          selectedLayerIndex = Number(li.dataset.index);
-          const layerObj = importedLayers[selectedLayerIndex];
-          selectedInfo.textContent = `Sélection: ${layerObj.name}` + (layerObj.date? ` — ${new Date(layerObj.date).toLocaleDateString()}` : '');
-        });
-        layersList.appendChild(li);
-        if(selectedLayerIndex === null){
-          li.click();
         }
       }
-      refreshTimelineFromLayers();
-      refreshProgress();
-    });
 
-    // Timeline management
-    const dateInput = document.getElementById('dateInput');
-    const addDateBtn = document.getElementById('addDateBtn');
-    const addNoteBtn = document.getElementById('addNoteBtn');
-    const timeline = document.getElementById('timeline');
-    const timelineDates = document.getElementById('timelineDates');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const saveLayerBtn = document.getElementById('saveLayerBtn');
-    const progressInput = document.getElementById('progressInput');
-    const saveProgressBtn = document.getElementById('saveProgressBtn');
-
-    let slider;
-    let timelineData = [];// [{date: Date, name: string, index: number}]
-    function renderTimeline(){
-      if(!timelineData.length){
-        timeline.innerHTML = '<div class="label">Ajoutez des dates pour activer le chronogramme.</div>';
-        timelineDates.textContent = '';
-        return;
-      }
-      timelineData.sort((a,b)=> a.date - b.date);
-      timeline.innerHTML = '';
-      slider = noUiSlider.create(timeline, {
-        start: 0,
-        step: 1,
-        connect: [true, false],
-        range: { min: 0, max: timelineData.length-1 },
-        tooltips: true,
-        format: {
-          to: (v)=> new Date(timelineData[Math.round(v)].date).toISOString().slice(0,10),
-          from: (v)=> v
+      // Simple measure tools (control is added later)
+      let measureMode = null; // 'dist' | 'area'
+      let measurePoints = [];
+      function resetMeasure(){ measureMode=null; measurePoints=[]; }
+      const MeasureControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function(map) {
+          const container = L.DomUtil.create('div', 'leaflet-bar');
+          const btnDist = L.DomUtil.create('a', '', container);
+          btnDist.href = '#';
+          btnDist.title = 'Mesurer distance';
+          btnDist.innerHTML = '<i class="fa fa-ruler"></i>';
+          L.DomEvent.on(btnDist, 'click', L.DomEvent.stop)
+                   .on(btnDist, 'mousedown', L.DomEvent.stop)
+                   .on(btnDist, 'dblclick', L.DomEvent.stop)
+                   .on(btnDist, 'click', function(){ resetMeasure(); measureMode='dist'; });
+          const btnArea = L.DomUtil.create('a', '', container);
+          btnArea.href = '#';
+          btnArea.title = 'Mesurer surface';
+          btnArea.innerHTML = '<i class="fa fa-draw-polygon"></i>';
+          L.DomEvent.on(btnArea, 'click', L.DomEvent.stop)
+                   .on(btnArea, 'mousedown', L.DomEvent.stop)
+                   .on(btnArea, 'dblclick', L.DomEvent.stop)
+                   .on(btnArea, 'click', function(){ resetMeasure(); measureMode='area'; });
+          return container;
         }
       });
-      slider.on('update', ()=> {
-        const idx = Math.round(Number(slider.get(true)));
-        const item = timelineData[idx];
-        timelineDates.textContent = `Sélection: ${new Date(item.date).toLocaleDateString()} — ${item.name}`;
+      map.addControl(new MeasureControl());
+      map.on('click', (e)=>{
+        if(!measureMode) return;
+        measurePoints.push([e.latlng.lat, e.latlng.lng]);
+        L.marker(e.latlng).addTo(map);
+        if(measureMode==='dist' && measurePoints.length>=2){
+          const a = measurePoints[measurePoints.length-2];
+          const b = measurePoints[measurePoints.length-1];
+          const d = map.distance(L.latLng(a[0],a[1]), L.latLng(b[0],b[1]));
+          alert(`Distance: ${(d/1000).toFixed(3)} km`);
+        }
+        if(measureMode==='area' && measurePoints.length>=3){
+          const poly = L.polygon(measurePoints);
+          const area = L.GeometryUtil ? L.GeometryUtil.geodesicArea(poly.getLatLngs()[0]) : 0; // optional if plugin present
+          alert(`Surface approx.: ${Math.round(area)} m²`);
+        }
       });
-    }
 
-    function refreshTimelineFromLayers(){
-      timelineData = importedLayers
-        .map((l,idx)=> l.date ? { date: new Date(l.date), name: l.name, index: idx } : null)
-        .filter(Boolean);
-      renderTimeline();
-    }
+      // Comments (bubbles)
+      $('btn-add-comment').onclick = ()=>{
+        alert('Cliquez sur la carte pour placer un commentaire');
+        const handler = (e)=>{
+          const text = prompt('Commentaire:');
+          if(text){
+            L.popup().setLatLng(e.latlng).setContent(`<div class='bubble'>${text}</div>`).openOn(map);
+            // Persist annotation
+            const imageId = currentImage?.id;
+            if(imageId){ postJSON('/api/annotations', { image_id: imageId, text, lat: e.latlng.lat, lng: e.latlng.lng }).catch(console.error); }
+          }
+          map.off('click', handler);
+        };
+        map.on('click', handler);
+      };
 
-    addDateBtn.addEventListener('click', async ()=>{
-      if(!dateInput.value) return alert('Choisissez une date');
-      const d = new Date(dateInput.value);
-      if(isNaN(+d)) return alert('Date invalide');
-      if(selectedLayerIndex === null) return alert('Sélectionnez une couche à dater.');
-      importedLayers[selectedLayerIndex].date = d;
-      const li = layersList.children[selectedLayerIndex];
-      if(li){
-        const dateSpan = li.querySelector('.layer-date');
-        if(dateSpan) dateSpan.textContent = ` — ${d.toISOString().slice(0,10)}`;
+      // Images per project
+      let images = [];
+      let currentImage = null;
+      async function loadImages(){
+        images = await fetchJSON(`/api/images?project_id=${encodeURIComponent(projectId)}`);
+        const thumbs = $('thumbs'); thumbs.innerHTML = '';
+        images.sort((a,b)=> a.date > b.date ? 1 : -1);
+        for(const img of images){
+          const el = document.createElement('div');
+          const dateLabel = document.createElement('div'); dateLabel.textContent = img.date;
+          const imageEl = document.createElement('img'); imageEl.src = img.preview_url || img.url; imageEl.title = img.original_name || img.date; imageEl.onclick = ()=> showImage(img);
+          el.appendChild(dateLabel); el.appendChild(imageEl);
+          thumbs.appendChild(el);
+        }
+        if(images.length){ showImage(images[images.length-1]); }
+        await updateProjectName();
+        await updateChart();
+        fillSelects();
+        loadDocs();
       }
-      selectedInfo.textContent = `Sélection: ${importedLayers[selectedLayerIndex].name} — ${d.toLocaleDateString()}`;
-      refreshTimelineFromLayers();
-      refreshProgress();
-      // Auto-save if project selected and we have file
-      const pid = getProjectId();
-      const item = importedLayers[selectedLayerIndex];
-      if(pid && item.file){
-        try{
-          const fd = new FormData();
-          fd.append('project_id', pid);
-          fd.append('date', d.toISOString().slice(0,10));
-          fd.append('file', item.file);
-          const res = await fetch('/api/upload/image', { method: 'POST', body: fd });
-          if(res.ok){ if(li) li.style.borderColor = 'rgba(34,197,94,.6)'; }
-        }catch(_e){}
+
+      function showImage(img){
+        currentImage = img;
+        $('projectName').textContent = currentProject?.name || 'Projet';
+        const fname = img.filename.toLowerCase();
+        if(fname.endsWith('.tif') || fname.endsWith('.tiff') || fname.endsWith('.geotiff')){
+          addGeoTIFF(img.url);
+        } else {
+          if(currentLayer){ map.removeLayer(currentLayer); currentLayer=null; }
+          try {
+            const bounds = [[-45,-90],[45,90]];
+            currentLayer = L.imageOverlay(img.url, bounds).addTo(map);
+            map.fitBounds(bounds);
+          } catch(e){
+            const icon = L.icon({iconUrl: img.url, iconSize:[200,200]});
+            L.marker([0,0], {icon}).addTo(map);
+            map.setView([0,0], 2);
+          }
+        }
       }
-    });
 
-    // Add note as speech bubble
-    addNoteBtn.addEventListener('click', ()=>{
-      const note = prompt('Votre commentaire:');
-      if(!note) return;
-      const center = map.getCenter();
-      const marker = L.marker(center).addTo(map);
-      marker.bindTooltip(note, { permanent: true, direction: 'top', className: 'note-bubble' }).openTooltip();
-    });
+      // Upload image
+      $('btn-upload').onclick = async ()=>{
+        const file = $('file').files[0];
+        if(!file) return alert('Choisir un fichier');
+        const fd = new FormData(); fd.append('file', file); fd.append('date', $('img-date').value || new Date().toISOString().slice(0,10)); fd.append('project_id', projectId);
+        const r = await fetch('/api/images/upload', { method:'POST', body: fd });
+        if(!r.ok) return alert('Echec upload');
+        await r.json();
+        loadImages();
+      };
 
-    // Prev / Next controls switch the selected timeline index
-    function changeIndex(delta){
-      if(!slider) return;
-      const idx = Math.round(Number(slider.get(true)));
-      const next = Math.min(Math.max(idx + delta, 0), timelineData.length-1);
-      slider.set(next);
-    }
-    prevBtn.addEventListener('click', ()=> changeIndex(-1));
-    nextBtn.addEventListener('click', ()=> changeIndex(1));
-
-    // Progress: % de couches avec une date affectée
-    function refreshProgress(){
-      const total = importedLayers.length;
-      if(total === 0){
-        progressFill.style.width = '0%';
-        progressText.textContent = '0%';
-        return;
+      // Project name and dates
+      let currentProject = null;
+      async function updateProjectName(){
+        const projects = await fetchJSON('/api/projects');
+        currentProject = projects.find(p=> p.id===projectId);
+        $('projectName').textContent = currentProject ? currentProject.name : 'Projet';
       }
-      const done = importedLayers.filter(l=> !!l.date).length;
-      const pct = Math.round((done / total) * 100);
-      progressFill.style.width = pct + '%';
-      progressText.textContent = pct + '%';
-    }
 
-    // Manual save layer
-    saveLayerBtn.addEventListener('click', async ()=>{
-      const pid = getProjectId();
-      if(!pid) return alert('Projet non défini');
-      if(selectedLayerIndex === null) return alert('Sélectionnez une couche');
-      const item = importedLayers[selectedLayerIndex];
-      if(!item.file) return alert('Aucun fichier sélectionné');
-      const d = item.date ? new Date(item.date) : (dateInput.value ? new Date(dateInput.value) : null);
-      if(!d || isNaN(+d)) return alert('Définissez une date');
-      const fd = new FormData();
-      fd.append('project_id', pid);
-      fd.append('date', d.toISOString().slice(0,10));
-      fd.append('file', item.file);
-      const res = await fetch('/api/upload/image', { method:'POST', body: fd });
-      if(res.ok){
-        const li = layersList.children[selectedLayerIndex];
-        if(li) li.style.borderColor = 'rgba(34,197,94,.6)';
-        alert('Image enregistrée');
-      } else {
-        alert('Erreur lors de l\'enregistrement');
+      // Progress
+      $('btn-save-progress').onclick = async ()=>{
+        const val = parseFloat($('progress').value || '0');
+        await postJSON(`/api/projects/${projectId}/progress`, {progress: val});
+        alert('Progression enregistrée');
+      };
+
+      // Analysis
+      function fillSelects(){
+        const a = $('img-a'), b = $('img-b');
+        a.innerHTML=''; b.innerHTML='';
+        for(const img of images){
+          const label = `${img.original_name || img.filename} (${img.date})`;
+          const o1 = document.createElement('option'); o1.value=img.id; o1.textContent=label; a.appendChild(o1);
+          const o2 = document.createElement('option'); o2.value=img.id; o2.textContent=label; b.appendChild(o2);
+        }
       }
-    });
+      let pieInstance = null;
+      $('btn-calc').onclick = async ()=>{
+        const image_id_a = $('img-a').value; const image_id_b = $('img-b').value;
+        const out = await postJSON('/api/analysis/diff', {image_id_a, image_id_b});
+        $('diff-out').src = out.url;
+        if(out.stats){
+          const ctx = $('pie').getContext('2d');
+          if(pieInstance) pieInstance.destroy();
+          const values = [out.stats.faible||0, out.stats.moyen||0, out.stats.fort||0];
+          pieInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: ['Faible', 'Moyen', 'Fort'],
+              datasets: [{ data: values, backgroundColor: ['#a3e4d7','#f9e79f','#f5b7b1'] }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+          });
+        }
+      };
 
-    // Save progress
-    saveProgressBtn.addEventListener('click', async ()=>{
-      const pid = getProjectId();
-      if(!pid) return alert('Projet non défini');
-      const val = Number(progressInput.value);
-      if(isNaN(val) || val < 0 || val > 100) return alert('Entrez un pourcentage 0-100');
-      const res = await fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ project_id: pid, progress: val }) });
-      if(res.ok){
-        progressFill.style.width = val + '%';
-        progressText.textContent = val + '%';
-        alert('Taux enregistré');
-      } else {
-        alert('Erreur de sauvegarde');
+      // Courbes
+      let chartInstance = null;
+      async function updateChart(){
+        if(!currentProject) return;
+        // Planned: from start to end as linear progression by days
+        const start = new Date(currentProject.start_date);
+        const end = new Date(currentProject.end_date);
+        const daysPlanned = Math.max(1, Math.round((end - start) / 86400000));
+        const labels = Array.from({length: daysPlanned+1}, (_,i)=> i);
+        const planned = labels.map((d)=> Math.round((d/daysPlanned)*100));
+
+        // Observed: mark days that have images
+        const dates = [...new Set(images.map(i=> i.date))].sort();
+        const first = start; const last = end;
+        const obs = labels.map(()=> null);
+        for(const dt of dates){
+          const d = Math.max(0, Math.min(daysPlanned, Math.round((new Date(dt) - first)/86400000)));
+          obs[d] = Math.round((d/daysPlanned)*100);
+        }
+
+        const ctx = $('chart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Délai prévu', data: planned, borderColor: 'red', backgroundColor:'transparent' },
+              { label: 'Délai observé', data: obs, borderColor: 'blue', backgroundColor:'transparent' }
+            ]
+          },
+          options: { scales: { x: { title: { display:true, text: 'Jours'} }, y:{ min:0, max:100, ticks:{ stepSize: 10 } } } }
+        });
       }
-    });
-  </script>
 
-  <style>
-    .note-bubble{
-      background:#111827;color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:10px;padding:6px 10px;box-shadow:0 6px 20px rgba(0,0,0,.35)
-    }
-  </style>
-</body>
-</html>
+      // Docs
+      async function loadDocs(){
+        const docs = await fetchJSON('/api/docs');
+        const box = $('docs');
+        box.innerHTML = '';
+        for(const d of docs){
+          const a = document.createElement('a'); a.href = d.url; a.textContent = d.filename; a.target = '_blank'; a.style.display='block';
+          box.appendChild(a);
+        }
+      }
+      $('btn-doc-upload').onclick = async ()=>{
+        const f = $('doc-file').files[0]; if(!f) return alert('Choisir un document');
+        const fd = new FormData(); fd.append('file', f);
+        const r = await fetch('/api/docs/upload', { method:'POST', body: fd });
+        if(!r.ok) return alert('Echec import');
+        await r.json();
+        loadDocs();
+      };
+
+      // Init
+      loadImages();
+    </script>
+  </body>
+  </html>
+

@@ -1,306 +1,137 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GO-CHANTIER</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--accent:#22c55e;--border:#1f2937}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1220,#0f172a);color:#e5e7eb;min-height:100vh}
-    .layout{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
-    header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(17,24,39,.6);backdrop-filter: blur(10px);border-bottom:1px solid rgba(148,163,184,.12)}
-    .brand{font-weight:800;letter-spacing:.3px}
-    .btn{appearance:none;border:1px solid rgba(148,163,184,.18);background:#0b1220;color:#e5e7eb;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer}
-    .btn:hover{border-color:rgba(148,163,184,.35)}
-    .container{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 54px)}
-    .sidebar{border-right:1px solid rgba(148,163,184,.12);background:rgba(17,24,39,.4);padding:12px}
-    .project-title{font-size:14px;color:var(--muted);margin:4px 0 10px}
-    .nav{display:grid;gap:8px}
-    .nav a{display:block;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.12);color:#e5e7eb;text-decoration:none;font-weight:600}
-    .nav a.active{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.08)}
-    .content{padding:12px}
-    .panel{background:rgba(17,24,39,.5);border:1px solid rgba(148,163,184,.12);border-radius:14px;padding:12px;height:100%}
-    .grid{display:grid;gap:12px}
-    .grid.cols-2{grid-template-columns:1fr 1fr}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    input,select{background:#0b1220;border:1px solid rgba(148,163,184,.18);color:#e5e7eb;border-radius:10px;padding:8px}
-    .projects-list{display:grid;gap:8px;margin-top:8px}
-    .project-card{border:1px solid rgba(148,163,184,.12);border-radius:12px;padding:10px;display:grid;grid-template-columns:72px 1fr;gap:10px;background:rgba(17,24,39,.35)}
-    .project-card img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid rgba(148,163,184,.12)}
-    .muted{color:var(--muted);font-size:12px}
-    .hidden{display:none}
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
-    .modal .box{width:100%;max-width:520px;background:#0b1220;border:1px solid rgba(148,163,184,.18);border-radius:14px;padding:16px}
-    iframe{width:100%;height:70vh;border:0;border-radius:12px}
-    .file-list{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}
-    .file-item{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid rgba(148,163,184,.12);padding:8px;border-radius:10px}
-  </style>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GO-CHANTIER - Projets</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+      :root { --sky: #7ec8e3; --text: #000; --bg: #fff; }
+      body { font-family: Arial, sans-serif; background: #f5f8fb; color: var(--text); }
+      * { font-size: 14px; font-weight: 700; }
+      header { background: var(--sky); color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+      .logo { font-size: 20px; font-weight: 800; color: #fff; }
+      .actions { display: flex; gap: 10px; align-items: center; }
+      .btn { background: #0d6efd; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+      .btn.secondary { background: #198754; }
+      .container { padding: 20px; }
+      .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+      input[type="search"] { padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc; width: 320px; background: #fff; font-weight: 700; color: #000; }
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+      .card { background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; }
+      .card img { width: 100%; height: 150px; object-fit: cover; background: #e9ecef; }
+      .card .content { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+      .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+      .muted { color: #555; font-weight: 700; }
+      .link { color: #0d6efd; text-decoration: none; }
+      .danger { color: #dc3545; cursor: pointer; }
+      .empty { text-align: center; padding: 40px; color: #333; }
+      dialog { border: none; border-radius: 10px; padding: 0; width: 420px; }
+      .modal { padding: 16px; background: #fff; border-radius: 10px; }
+      .modal h3 { margin: 0 0 12px 0; font-size: 16px; }
+      .modal .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .modal input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #000; }
+      .modal .actions { justify-content: flex-end; margin-top: 12px; }
+    </style>
   </head>
-<body>
-  <div class="layout">
+  <body>
     <header>
-      <div class="brand">GO-CHANTIER</div>
-      <div class="row">
-        <input id="searchInput" placeholder="Rechercher un projet..." />
-        <button id="newProjectBtn" class="btn">Nouveau projet</button>
-        <button id="deleteProjectBtn" class="btn" style="border-color:#ef4444;color:#fecaca">Supprimer le projet</button>
+      <div class="logo">GO-CHANTIER</div>
+      <div class="actions">
+        <button class="btn" id="btn-new">+ Nouveau projet</button>
       </div>
     </header>
     <div class="container">
-      <aside class="sidebar">
-        <div id="projectName" class="project-title">Aucun projet</div>
-        <nav class="nav">
-          <a href="#visualisations" data-tab="visualisations" class="active">Visualisations</a>
-          <a href="#analyse" data-tab="analyse">Analyse</a>
-          <a href="#courbes" data-tab="courbes">Rapport courbe</a>
-          <a href="#rapports" data-tab="rapports">Rapports</a>
-        </nav>
-        <div style="margin-top:14px">
-          <div class="muted">Projets existants</div>
-          <div id="projects" class="projects-list"></div>
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Rechercher un projet..." />
         </div>
-      </aside>
-      <main class="content">
-        <section id="tab-visualisations" class="panel">
-          <iframe id="visFrame" src="/suivi"></iframe>
-        </section>
-        <section id="tab-analyse" class="panel hidden">
-          <div class="grid cols-2">
+      <div id="projects" class="grid"></div>
+      <div id="empty" class="empty" style="display:none;">Aucun projet. Créez-en un pour commencer.</div>
+        </div>
+
+    <dialog id="dlg">
+      <form method="dialog" class="modal" id="form-project">
+        <h3>Créer un projet</h3>
+        <input placeholder="Nom du projet" id="p-name" required />
+        <div class="grid2">
             <div>
+            <label for="p-start" class="muted">Début</label>
+            <input type="date" id="p-start" required />
+            </div>
+            <div>
+            <label for="p-end" class="muted">Fin</label>
+            <input type="date" id="p-end" required />
+            </div>
+            </div>
+        <div class="actions">
+          <button class="btn secondary" value="cancel" type="button" id="btn-cancel">Annuler</button>
+          <button class="btn" value="default" type="submit">Créer</button>
+            </div>
+          </form>
+    </dialog>
+
+    <script>
+      const elProjects = document.getElementById('projects');
+      const elEmpty = document.getElementById('empty');
+      const elSearch = document.getElementById('search');
+      const dlg = document.getElementById('dlg');
+      document.getElementById('btn-new').onclick = () => dlg.showModal();
+      document.getElementById('btn-cancel').onclick = () => dlg.close();
+
+      async function fetchJSON(url){ const r = await fetch(url); return r.json(); }
+      async function postJSON(url, data){
+        const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+        if(!r.ok) throw new Error('Erreur');
+        return r.json();
+      }
+      async function del(url){ const r = await fetch(url, {method:'DELETE'}); return r.ok; }
+
+      async function loadProjects(){
+        const projects = await fetchJSON('/api/projects');
+        const q = elSearch.value?.toLowerCase() || '';
+        const filtered = projects.filter(p => p.name.toLowerCase().includes(q));
+        elProjects.innerHTML = '';
+        if(filtered.length===0){ elEmpty.style.display='block'; return; } else { elEmpty.style.display='none'; }
+        for(const p of filtered){
+          const latestImg = await fetchJSON(`/api/images?project_id=${encodeURIComponent(p.id)}`)
+            .then(list => list.sort((a,b)=> (a.date>b.date?-1:1))[0])
+            .catch(()=>null);
+          const card = document.createElement('div'); card.className='card';
+          const imgSrc = latestImg?.url || 'https://placehold.co/600x400?text=Projet';
+          card.innerHTML = `
+            <img src="${imgSrc}" alt="aperçu"/>
+            <div class="content">
               <div class="row">
-                <select id="imageA"></select>
-                <select id="imageB"></select>
-                <button id="runDiff" class="btn">Calculer</button>
-              </div>
-              <div class="muted">Comparer deux orthophotos d'un même projet</div>
-            </div>
-            <div>
-              <img id="diffPreview" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px;border:1px solid rgba(148,163,184,.12)" />
-            </div>
-          </div>
-        </section>
-        <section id="tab-courbes" class="panel hidden">
-          <canvas id="delaiChart" height="120"></canvas>
-        </section>
-        <section id="tab-rapports" class="panel hidden">
-          <div class="row">
-            <input id="docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" />
-            <button id="uploadDoc" class="btn">Importer</button>
-          </div>
-          <ul id="docsList" class="file-list"></ul>
-        </section>
-      </main>
-    </div>
-  </div>
-
-  <div id="modal" class="modal">
-    <div class="box">
-      <div class="row" style="justify-content:space-between">
-        <div style="font-weight:700">Nouveau projet</div>
-        <button id="closeModal" class="btn">Fermer</button>
-      </div>
-      <div class="grid" style="margin-top:10px">
-        <input id="pName" placeholder="Nom du projet" />
-        <div class="row">
-          <label>Début</label><input id="pStart" type="date" />
-          <label>Fin</label><input id="pEnd" type="date" />
+                <a class="link" href="/suivi?project_id=${p.id}">${p.name}</a>
+                <i class="fa fa-trash danger" title="Supprimer" data-id="${p.id}"></i>
         </div>
-        <button id="createProject" class="btn">Créer</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const tabs = document.querySelectorAll('.nav a');
-    const sections = {
-      visualisations: document.getElementById('tab-visualisations'),
-      analyse: document.getElementById('tab-analyse'),
-      courbes: document.getElementById('tab-courbes'),
-      rapports: document.getElementById('tab-rapports')
-    };
-    const visFrame = document.getElementById('visFrame');
-    tabs.forEach(a=>{
-      a.addEventListener('click', (e)=>{
-        e.preventDefault();
-        tabs.forEach(t=>t.classList.remove('active'));
-        a.classList.add('active');
-        Object.values(sections).forEach(s=>s.classList.add('hidden'));
-        const key = a.dataset.tab;
-        sections[key].classList.remove('hidden');
-        if(key === 'courbes') renderChart();
-        if(key === 'analyse') refreshImagesForAnalyse();
-        if(key === 'rapports') loadDocs();
-      });
-    });
-
-    const modal = document.getElementById('modal');
-    const newProjectBtn = document.getElementById('newProjectBtn');
-    const closeModal = document.getElementById('closeModal');
-    const createProject = document.getElementById('createProject');
-    const pName = document.getElementById('pName');
-    const pStart = document.getElementById('pStart');
-    const pEnd = document.getElementById('pEnd');
-    const projectName = document.getElementById('projectName');
-    const projectsList = document.getElementById('projects');
-    const searchInput = document.getElementById('searchInput');
-    const imageA = document.getElementById('imageA');
-    const imageB = document.getElementById('imageB');
-    const runDiff = document.getElementById('runDiff');
-    const diffPreview = document.getElementById('diffPreview');
-    const docFile = document.getElementById('docFile');
-    const uploadDoc = document.getElementById('uploadDoc');
-    const docsList = document.getElementById('docsList');
-    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
-
-    let currentProject = null; // {id,name,startDate,endDate}
-    let cachedProjects = [];
-
-    function showModal(){ modal.style.display='flex'; }
-    function hideModal(){ modal.style.display='none'; }
-    newProjectBtn.onclick = showModal;
-    closeModal.onclick = hideModal;
-    createProject.onclick = async ()=>{
-      const payload = {
-        name: pName.value.trim(),
-        startDate: pStart.value,
-        endDate: pEnd.value
-      };
-      const res = await fetch('/api/projects', {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
-      });
-      if(!res.ok){ alert('Champs manquants'); return; }
-      const pj = await res.json();
-      currentProject = pj;
-      projectName.textContent = pj.name;
-      if(visFrame) visFrame.src = '/suivi?project_id='+encodeURIComponent(pj.id);
-      hideModal();
-      await loadProjects();
-      refreshImagesForAnalyse();
-      renderChart();
-      loadDocs();
-    };
-
-    async function loadProjects(q=''){
-      const url = q ? '/api/projects/search?q='+encodeURIComponent(q) : '/api/projects';
-      const res = await fetch(url);
-      const arr = await res.json();
-      cachedProjects = arr;
-      projectsList.innerHTML = '';
-      arr.forEach(p=>{
-        const a = document.createElement('div');
-        a.className='project-card';
-        const imgUrl = p.lastImage?.url || '';
-        const img = document.createElement('img'); img.src = imgUrl; img.alt = p.name;
-        const info = document.createElement('div');
-        const title = document.createElement('div'); title.style.fontWeight='700'; title.textContent = p.name;
-        const meta = document.createElement('div'); meta.className='muted'; meta.textContent = `Début ${p.startDate} – Fin ${p.endDate}`;
-        a.appendChild(img); info.appendChild(title); info.appendChild(meta); a.appendChild(info);
-        a.style.cursor='pointer';
-        a.onclick = ()=>{ currentProject = p; projectName.textContent = p.name; if(visFrame) visFrame.src = '/suivi?project_id='+encodeURIComponent(p.id); refreshImagesForAnalyse(); renderChart(); loadDocs(); };
-        projectsList.appendChild(a);
-      });
-    }
-    searchInput.addEventListener('input', (e)=> loadProjects(e.target.value));
-    deleteProjectBtn.addEventListener('click', async ()=>{
-      if(!currentProject){ alert('Aucun projet sélectionné'); return; }
-      if(!confirm(`Supprimer le projet "${currentProject.name}" ?`)) return;
-      const res = await fetch('/api/projects/'+currentProject.id, { method:'DELETE' });
-      if(res.status === 204){
-        currentProject = null;
-        projectName.textContent = 'Aucun projet';
-        visFrame.src = '/suivi';
-        await loadProjects();
-        imageA.innerHTML=''; imageB.innerHTML=''; diffPreview.src='';
-        docsList.innerHTML='';
-        alert('Projet supprimé');
-      } else {
-        alert('Erreur lors de la suppression');
-      }
-    });
-
-    async function refreshImagesForAnalyse(){
-      imageA.innerHTML = ''; imageB.innerHTML = '';
-      if(!currentProject){ return; }
-      const res = await fetch('/api/images?project_id='+currentProject.id);
-      const imgs = await res.json();
-      for(const img of imgs){
-        const opt1 = document.createElement('option'); opt1.value = img.url; opt1.textContent = `${img.date || ''} — ${img.filename}`;
-        const opt2 = opt1.cloneNode(true);
-        imageA.appendChild(opt1); imageB.appendChild(opt2);
-      }
-    }
-    runDiff.onclick = async ()=>{
-      if(!imageA.value || !imageB.value){ alert('Choisissez deux images'); return; }
-      const res = await fetch('/api/analyse/diff', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ imageA: imageA.value, imageB: imageB.value }) });
-      const json = await res.json();
-      if(!res.ok){ alert(json.error||'Erreur'); return; }
-      diffPreview.src = json.resultUrl;
-    };
-
-    let chartInstance = null;
-    async function renderChart(){
-      const ctx = document.getElementById('delaiChart');
-      if(!currentProject){ ctx.getContext('2d').font='14px Inter'; ctx.getContext('2d').fillText('Sélectionnez un projet', 10, 30); return; }
-      const start = new Date(currentProject.startDate);
-      const end = new Date(currentProject.endDate);
-      const days = Math.max(1, Math.ceil((end - start) / (1000*60*60*24)));
-      const labels = Array.from({length: days}, (_,i)=> i+1);
-      // planned: linear from 0 to 100
-      const planned = labels.map(d=> Math.round((d-1)/(days-1)*100));
-      // observed: based on image dates
-      const res = await fetch('/api/images?project_id='+currentProject.id);
-      const imgs = await res.json();
-      const dates = imgs.filter(i=>i.date).map(i=> new Date(i.date)).sort((a,b)=>a-b);
-      const observed = labels.map(()=>0);
-      if(dates.length){
-        const last = dates[dates.length-1];
-        const elapsed = Math.min(days-1, Math.max(0, Math.ceil((last - start)/(1000*60*60*24))));
-        for(let i=0;i<labels.length;i++){
-          observed[i] = i <= elapsed ? Math.round((i/elapsed)*100) : 100;
+              <div class="muted">${p.start_date} → ${p.end_date}</div>
+            </div>`;
+          card.querySelector('.fa-trash').onclick = async (e)=>{
+            if(confirm('Supprimer ce projet ?')){
+              const ok = await del(`/api/projects/${p.id}`);
+              if(ok) loadProjects();
+            }
+          };
+          elProjects.appendChild(card);
         }
       }
-      if(chartInstance){ chartInstance.destroy(); }
-      chartInstance = new Chart(ctx, {
-        type:'line',
-        data:{ labels, datasets:[
-          { label:'Délai prévu', data: planned, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.2)' },
-          { label:'Délai observé', data: observed, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.2)' }
-        ]},
-        options:{ responsive:true, scales:{ y:{ beginAtZero:true, max:100 } } }
-      });
-    }
 
-    async function loadDocs(){
-      docsList.innerHTML = '';
-      if(!currentProject) return;
-      const res = await fetch('/api/docs?project_id='+currentProject.id);
-      const docs = await res.json();
-      for(const d of docs){
-        const li = document.createElement('li'); li.className='file-item';
-        const name = document.createElement('span'); name.textContent = d.filename;
-        const a = document.createElement('a'); a.className='btn'; a.textContent='Télécharger'; a.href = d.url; a.download = d.filename;
-        li.appendChild(name); li.appendChild(a); docsList.appendChild(li);
-      }
-    }
-    uploadDoc.onclick = async ()=>{
-      if(!currentProject){ alert('Sélectionnez un projet'); return; }
-      if(!docFile.files.length){ alert('Choisissez un fichier'); return; }
-      const fd = new FormData();
-      fd.append('project_id', currentProject.id);
-      fd.append('file', docFile.files[0]);
-      const res = await fetch('/api/upload/doc', { method:'POST', body: fd });
-      if(!res.ok){ const j = await res.json(); alert(j.error||'Erreur'); return; }
-      docFile.value = '';
-      loadDocs();
-    };
+      document.getElementById('form-project').onsubmit = async (e)=>{
+        e.preventDefault();
+        const name = document.getElementById('p-name').value.trim();
+        const start = document.getElementById('p-start').value;
+        const end = document.getElementById('p-end').value;
+        if(!name||!start||!end) return;
+        await postJSON('/api/projects', {name, start_date:start, end_date:end});
+        dlg.close();
+        loadProjects();
+      };
 
-    // Initial load
-    loadProjects();
-  </script>
-</body>
-</html>
+      elSearch.addEventListener('input', loadProjects);
+      loadProjects();
+    </script>
+  </body>
+  </html>
+

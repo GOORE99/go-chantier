@@ -46,5 +46,105 @@
     "filename": "46552a3d082a43eb9b2e7e368bca52c8.png",
     "date": "2025-08-31",
     "url": "/static/uploads/46552a3d082a43eb9b2e7e368bca52c8.png"
+  },
+  {
+    "id": "1683ccfc22d34644801b73e592a89317",
+    "filename": "1683ccfc22d34644801b73e592a89317.tif",
+    "url": "/static/uploads/1683ccfc22d34644801b73e592a89317.tif",
+    "date": "2025-08-22",
+    "project_id": "f571e61a07884640a11c1a7dd30ca4ae"
+  },
+  {
+    "id": "3a31da3f903f4b7fb70d449383f1e5ff",
+    "filename": "3a31da3f903f4b7fb70d449383f1e5ff.tif",
+    "url": "/static/uploads/3a31da3f903f4b7fb70d449383f1e5ff.tif",
+    "date": "2025-08-22",
+    "project_id": "f571e61a07884640a11c1a7dd30ca4ae"
+  },
+  {
+    "id": "bbfd0df8b36642bea28280c897bb5343",
+    "filename": "bbfd0df8b36642bea28280c897bb5343.tif",
+    "url": "/static/uploads/bbfd0df8b36642bea28280c897bb5343.tif",
+    "date": "2025-08-22",
+    "project_id": "f571e61a07884640a11c1a7dd30ca4ae"
+  },
+  {
+    "id": "0c1f25bc883b4725858553931bd3ce26",
+    "filename": "0c1f25bc883b4725858553931bd3ce26.tif",
+    "url": "/static/uploads/0c1f25bc883b4725858553931bd3ce26.tif",
+    "date": "2025-08-22",
+    "project_id": "f571e61a07884640a11c1a7dd30ca4ae"
+  },
+  {
+    "id": "d3c90d2215cc4c98b1e6e65980269d14",
+    "filename": "d3c90d2215cc4c98b1e6e65980269d14.tif",
+    "url": "/static/uploads/d3c90d2215cc4c98b1e6e65980269d14.tif",
+    "date": "2025-08-29",
+    "project_id": "648be1417ec2448d901c1907245785ba"
+  },
+  {
+    "id": "55eafde59f7b45e58a1f2a17241f2119",
+    "filename": "55eafde59f7b45e58a1f2a17241f2119.tif",
+    "url": "/static/uploads/55eafde59f7b45e58a1f2a17241f2119.tif",
+    "date": "2025-08-22",
+    "project_id": "648be1417ec2448d901c1907245785ba"
+  },
+  {
+    "id": "79a3a27bc1c74e6e8227d7887573ae8d",
+    "filename": "79a3a27bc1c74e6e8227d7887573ae8d.tif",
+    "url": "/static/uploads/79a3a27bc1c74e6e8227d7887573ae8d.tif",
+    "date": "2025-08-22",
+    "project_id": "648be1417ec2448d901c1907245785ba"
+  },
+  {
+    "id": "12d86905cd934eab9b1fde2e578fe677",
+    "filename": "12d86905cd934eab9b1fde2e578fe677.tif",
+    "url": "/static/uploads/12d86905cd934eab9b1fde2e578fe677.tif",
+    "date": "2025-08-22",
+    "project_id": "648be1417ec2448d901c1907245785ba"
+  },
+  {
+    "id": "6c57a992fdd84d26ba2c742a2b373cfd",
+    "filename": "6c57a992fdd84d26ba2c742a2b373cfd.tif",
+    "url": "/static/uploads/6c57a992fdd84d26ba2c742a2b373cfd.tif",
+    "date": "2025-08-22",
+    "project_id": "96075597f8a743c089bc0331264bc1a9"
+  },
+  {
+    "id": "afbab0e17ae8426c8061a768f90af5d5",
+    "filename": "afbab0e17ae8426c8061a768f90af5d5.tif",
+    "url": "/static/uploads/afbab0e17ae8426c8061a768f90af5d5.tif",
+    "date": "2025-08-22",
+    "project_id": "9a542e8db4ac49908c68096cad6b6388"
+  },
+  {
+    "id": "03f609d9c79b4499b0b6b11df741405c",
+    "filename": "03f609d9c79b4499b0b6b11df741405c.tif",
+    "url": "/static/uploads/03f609d9c79b4499b0b6b11df741405c.tif",
+    "date": "2025-08-22",
+    "project_id": "9a542e8db4ac49908c68096cad6b6388"
+  },
+  {
+    "id": "a8204f918da54b0091edf9c531070a9d",
+    "filename": "a8204f918da54b0091edf9c531070a9d.tif",
+    "url": "/static/uploads/a8204f918da54b0091edf9c531070a9d.tif",
+    "date": "2025-09-05",
+    "project_id": "9a542e8db4ac49908c68096cad6b6388"
+  },
+  {
+    "id": "d87a3507dac34cd2879183bd9d7282fa",
+    "filename": "d87a3507dac34cd2879183bd9d7282fa.tif",
+    "url": "/static/uploads/d87a3507dac34cd2879183bd9d7282fa.tif",
+    "date": "2025-08-23",
+    "project_id": "9a542e8db4ac49908c68096cad6b6388",
+    "preview_url": "/static/uploads/previews/d87a3507dac34cd2879183bd9d7282fa.png"
+  },
+  {
+    "id": "b7ffac168c58462f8a31d136f1ddfc15",
+    "filename": "b7ffac168c58462f8a31d136f1ddfc15.tif",
+    "url": "/static/uploads/b7ffac168c58462f8a31d136f1ddfc15.tif",
+    "date": "2025-08-23",
+    "project_id": "9a542e8db4ac49908c68096cad6b6388",
+    "preview_url": "/static/uploads/previews/b7ffac168c58462f8a31d136f1ddfc15.png"
   }
 ]
